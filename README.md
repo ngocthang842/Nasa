@@ -1,38 +1,55 @@
-1. Dữ liệu lấy từ đâu? (Các file trong data/raw)
-"Chúng ta có 9 file dữ liệu gốc lấy trực tiếp từ vệ tinh của NASA. Mình chia thành 3 nhóm chính:
+# 🌾 RotaNA - Hệ thống Hỗ trợ Ra quyết định Luân canh Nông nghiệp (Nghệ An)
 
-Nhóm Cây trồng: Các file ndvi, evi, lai. Giúp biết cây đang xanh tốt hay úa vàng (đã lọc bỏ mây).
+**RotaNA** là một Hệ thống Hỗ trợ Ra quyết định (Decision Support System - DSS) được phát triển trong khuôn khổ cuộc thi **NASA Space Apps Challenge 2026**. 
 
-Nhóm Thời tiết & Nước: Các file mua, lst, smap, et, pet. Cho biết mưa bao nhiêu, đất khô hay ẩm, nắng nóng cỡ nào.
+Dự án tích hợp dữ liệu viễn thám từ vệ tinh NASA để phân tích rủi ro khí hậu (Nắng nóng, Xói mòn, Úng ngập) và đưa ra các kịch bản luân canh cây trồng tối ưu cho 3 vùng sinh thái tại tỉnh Nghệ An: Yên Thành (Đồng bằng), Nghi Lộc (Ven biển) và Con Cuông (Đồi núi).
 
-Nhóm Địa hình: File dem_slope, landcover, dat. Cho biết vùng nào dốc (dễ xói mòn), vùng nào trồng lúa.
-(Chúng ta có 3 file power_... lấy từ NASA POWER - mình sẽ giải thích ngay sau đây)."
+---
 
-2. Tại sao lại có dữ liệu 11 năm? (Giải thích cái bạn thắc mắc)
-"Có một điểm quan trọng mình cần làm rõ: Tại sao chúng ta lấy dữ liệu năm 2025 mà lại có file 11 năm?
+## 🚀 1. Tính năng chính của Dashboard
+- **Bản đồ khu vực:** Hiển thị ranh giới 3 huyện trực quan.
+- **Đèn giao thông rủi ro:** Cảnh báo tức thời theo tháng về tình trạng Nắng nóng, Lượng mưa và Độ ẩm đất.
+- **Lịch rủi ro 12 tháng:** Nhận diện trực quan các "cửa sổ rủi ro" (Gió Lào mùa hè, Mưa lũ mùa thu) để nông dân tránh gieo hạt.
+- **Bộ lọc kịch bản luân canh:** Nông dân tự điều chỉnh thanh trượt (Ưu tiên Nước / Đất / Kinh tế), hệ thống sẽ tự động chấm điểm và gợi ý kịch bản tối ưu nhất.
 
-Dữ liệu năm 2025: Là tình hình thực tế ĐANG DIỄN RA năm nay (ví dụ: tháng 4 có 10 ngày nắng).
+---
 
-Dữ liệu 11 năm (2015-2025): Là mức trung bình lịch sử.
+## 📊 2. Quy trình Xử lý Dữ liệu (Data Pipeline)
 
-Ví dụ dễ hiểu: Bác sĩ bảo huyết áp của bạn là 140. Bạn không biết đó là cao hay thấp cho đến khi so với mức bình thường (120). Dữ liệu 11 năm chính là "mức bình thường". Nhờ nó, hệ thống mới biết được năm 2025 này nắng nóng là bất thường hay bình thường để đưa ra cảnh báo."
+Dữ liệu được xử lý qua 3 giai đoạn: **Thu thập (GEE) → Xử lý (Python) → Trực quan hóa (Streamlit)**.
 
-3. Máy tính đã xử lý những gì? (File gop_du_lieu.py và rui_ro.py)
-"Đưa 9 file thô đó lên Dashboard thì nông dân sẽ không đọc được. Nên chúng ta có các file code Python (như gop_du_lieu.py) làm nhiệm vụ:
+### 2.1. Dữ liệu lấy từ đâu? (Thư mục `data/raw`)
+Dữ liệu gốc được trích xuất từ Google Earth Engine (GEE) và NASA POWER, chia làm 3 nhóm chính:
+1. **Nhóm Cây trồng (MODIS):** `ndvi`, `evi`, `lai` (Đã lọc mây) - Đánh giá sức khỏe thảm thực vật.
+2. **Nhóm Thời tiết & Nước:** `mua` (GPM), `lst` (Nhiệt độ), `smap` (Độ ẩm đất), `et`, `pet` (Bốc thoát hơi nước).
+3. **Nhóm Địa hình & Đất:** `dem_slope` (Độ dốc), `landcover` (Lớp phủ), `dat` (Tính chất đất).
+4. **Dữ liệu lịch sử (NASA POWER):** 3 file `power_...csv` chứa dữ liệu khí tượng **11 năm (2015-2025)**.
 
-Gộp dữ liệu từng ngày lại thành từng tháng.
+> 💡 **Tại sao lại lấy dữ liệu 11 năm?**
+> Dữ liệu 11 năm đóng vai trò là "mức trung bình lịch sử" (Baseline). Nhờ có nó, hệ thống mới so sánh được năm 2025 đang nắng nóng bất thường hay bình thường để đưa ra cảnh báo chính xác.
 
-Tính toán công thức (Quan trọng): Tính chỉ số ESI (căng thẳng nước của cây), Cân bằng nước (Mưa - Bốc hơi), và Đếm số ngày nắng nóng >35°C.
+### 2.2. Máy tính đã xử lý những gì? (Các file Python)
+- `lay_power.py`: Kết nối API NASA POWER để tải dữ liệu khí tượng 11 năm.
+- `gop_du_lieu.py`: Gộp dữ liệu từ ngày thành tháng. Tính toán các chỉ số: **ESI** (Căng thẳng nước), **Cân bằng nước** (Mưa - Bốc hơi), và đếm số ngày nắng nóng >35°C.
+- `rui_ro.py`: Áp dụng logic nghiệp vụ (Độ dốc + Lượng mưa) để gắn nhãn rủi ro "Xói mòn" hoặc "Úng ngập".
+- *Kết quả đầu ra:* File `data/processed/bang_huyen_thang.csv` và `rui_ro_huyen_thang.csv` chứa dữ liệu sạch đã được tính toán.
 
-Từ đó, nó tự động gắn nhãn: Tháng nào là "Nắng nóng", tháng nào là "Mưa lớn gây xói mòn" (dựa vào độ dốc).
+---
 
-4. Giao diện Web hiển thị cho nông dân xem cái gì? (File app.py)
-"Mở trình duyệt lên, nông dân sẽ thấy 4 phần rất dễ hiểu:
-
-Bản đồ: Chọn huyện Yên Thành, Nghi Lộc hay Con Cuông.
-
-3 Thẻ Đèn Giao Thông: Báo ngay tháng này Nắng nóng thế nào? Mưa bao nhiêu? Đất đủ ẩm không? (Màu xanh là an toàn, đỏ là nguy hiểm).
-
-Lịch rủi ro 12 tháng: Nhìn vào cái lưới vuông, nông dân biết ngay tháng 4, 5 là tháng Gió Lào (ô đỏ), tháng 9, 10 là tháng mưa lũ (ô đỏ) để tránh gieo hạt.
-
-Thanh trượt Kịch bản: Đây là phần "chọn luân canh". Nếu nông dân muốn ưu tiên "Giữ đất" (vì đất đang bạc màu), họ kéo thanh trượt. Hệ thống sẽ tự động tính điểm và gợi ý trồng Đậu xanh. Nếu ưu tiên "Kinh tế", nó gợi ý trồng Ngô/Đậu đen."
+## 📁 3. Cấu trúc Thư mục Dự án
+```text
+Nasa/
+│
+├── .streamlit/             # Cấu hình giao diện Streamlit (Theme sáng)
+├── data/                   # Thư mục chứa dữ liệu
+│   ├── raw/                # Dữ liệu gốc tải từ vệ tinh NASA (CSV, GeoJSON)
+│   └── processed/          # Dữ liệu đã qua xử lý (bảng gộp, tính điểm rủi ro)
+│
+├── src/                    # (Tùy chọn) Chứa các module phụ trợ
+├── app.py                  # File chính khởi chạy giao diện Web Dashboard
+├── gio_lao.py              # Script phân tích đặc điểm gió Lào (nếu có)
+├── gop_du_lieu.py          # Script gộp và tính toán dữ liệu từ data/raw
+├── rui_ro.py               # Script phân tích logic rủi ro nông học
+├── lay_power.py            # Script lấy dữ liệu NASA POWER
+├── requirements.txt        # Danh sách các thư viện cần thiết
+└── README.md               # Tài liệu hướng dẫn này
