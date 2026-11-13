@@ -1,8 +1,9 @@
 import pandas as pd
 from pathlib import Path
 
-RAW = Path("data/raw")
-OUT = Path("data/processed")
+BASE = Path(__file__).resolve().parent.parent   # thư mục chứa "khác" và "data"
+RAW = BASE / "data" / "raw"
+OUT = BASE / "data" / "processed"
 OUT.mkdir(parents=True, exist_ok=True)
 
 pd.set_option("display.width", 200)
