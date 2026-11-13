@@ -1,0 +1,18 @@
+Cách mở trong PyCharm
+1. File > Open, chọn thư mục RotaNA (thư mục có app.py), không mở từng file lẻ.
+2. Giữ nguyên data/processed và data/raw y như project cũ (copy CSV và geojson vào).
+3. Terminal trong PyCharm: pip install -r requirements.txt
+4. Run app.py. Streamlit cần cấu hình: Run > Edit Configurations > Script path = app.py, hoặc gõ: streamlit run app.py
+
+Sửa cái gì ở đâu
+- engine.py          Công thức, lịch cây, tên vùng. Đừng đụng giao diện.
+- app.py             Menu trái và bộ lọc năm / tháng / vùng.
+- pages/chung.py     Màu, nút đang chọn, thẻ đánh giá nông dân.
+- pages/tong_quan.py Trang đầu.
+- pages/cay_vung.py  Cây nổi của từng vùng.
+- pages/luan_canh.py Gợi ý tháng và 2 kịch bản.
+- pages/so_sanh.py   Biểu đồ nhiều năm.
+- pages/du_lieu.py   Bảng file CSV.
+
+Cam thay cho "Cây có múi" trong engine.py (CAY, CAY_VUNG, GIOI_THIEU).
+Lỗi dat_txt đã bỏ itertuples, đọc bằng to_dict.

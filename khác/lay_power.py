@@ -2,7 +2,9 @@ import requests
 import pandas as pd
 from pathlib import Path
 
-RAW = Path("data/raw")
+BASE = Path(__file__).resolve().parent.parent   # thư mục chứa "khác" và "data"
+RAW = BASE / "data" / "raw"
+OUT = BASE / "data" / "processed"
 
 # Tọa độ xấp xỉ trung tâm huyện (POWER có độ phân giải ~50 km nên sai lệch vài km không đáng kể)
 HUYEN = {
@@ -22,7 +24,7 @@ for ten, (lat, lon) in HUYEN.items():
             "latitude": lat,
             "longitude": lon,
             "start": "20150101",
-            "end": "20251231",
+            "end": "20261110",
             "format": "JSON",
         },
         timeout=180,
