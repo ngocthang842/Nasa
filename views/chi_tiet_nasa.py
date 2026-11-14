@@ -46,35 +46,46 @@ def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
         st.session_state[key_thang] = thang_mac_dinh
 
     with st.container(border=True):
-        col_y_lbl, col_y_val = st.columns([3.2, 8.8], gap="small")
-        with col_y_lbl:
-            st.markdown(
-                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
-                '📅 1. Chuỗi Năm Khảo Sát (2018–2026):'
-                '</div>',
-                unsafe_allow_html=True,
-            )
-        with col_y_val:
-            nam_chon = st.pills(
-                "Năm khảo sát:",
-                options=years,
-                default=st.session_state[key_nam],
-                format_func=lambda y: f"🌟 Năm {y} (Kế hoạch)" if y == 2026 else (f"📅 {y}" if y >= 2024 else f"📜 {y}"),
-                label_visibility="collapsed",
-                key=f"ctrl_nam_{cot_id}",
-            )
-            if nam_chon:
-                st.session_state[key_nam] = int(nam_chon)
+        col_y_box, col_m_box = st.columns([3.8, 8.2], gap="small")
 
-        col_m_lbl, col_m_val = st.columns([3.2, 8.8], gap="small")
-        with col_m_lbl:
+        with col_y_box:
             st.markdown(
-                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
-                '🌿 2. Chu kỳ 12 Tháng Vụ Lúa:'
+                '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '📅 1. Năm Viễn Thám (Gõ số để tìm nhanh):'
                 '</div>',
                 unsafe_allow_html=True,
             )
-        with col_m_val:
+            danh_sach_nam = sorted(years, reverse=True)
+            idx_nam = danh_sach_nam.index(st.session_state[key_nam]) if st.session_state[key_nam] in danh_sach_nam else 0
+
+            def _dinh_dang_nam(y):
+                if y == 2026:
+                    return f"🌟 Năm {y} (Kế hoạch)"
+                elif y >= 2024:
+                    return f"📅 Năm {y} (Gần đây)"
+                else:
+                    return f"📜 Năm {y} (Lịch sử)"
+
+            sel_nam = st.selectbox(
+                "Năm khảo sát:",
+                options=danh_sach_nam,
+                index=idx_nam,
+                format_func=_dinh_dang_nam,
+                key=f"ctrl_nam_{cot_id}",
+                label_visibility="collapsed",
+                help="Gõ số năm trực tiếp để tìm nhanh",
+            )
+            if sel_nam and sel_nam != st.session_state[key_nam]:
+                st.session_state[key_nam] = int(sel_nam)
+                st.rerun()
+
+        with col_m_box:
+            st.markdown(
+                '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '🌿 2. Chu kỳ 12 Tháng Vụ Lúa Yên Thành:'
+                '</div>',
+                unsafe_allow_html=True,
+            )
             thang_chon = st.pills(
                 "Tháng khảo sát vụ lúa:",
                 options=list(range(1, 13)),
