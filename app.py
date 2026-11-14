@@ -41,33 +41,54 @@ st.set_page_config(
 st.markdown(CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# DANH MỤC ĐIỀU HƯỚNG CHUẨN NASA NEDA & LUÂN CANH CÂY TRỒNG
+# PHÂN HỆ SỐ HÓA DỮ LIỆU & ĐIỀU HÀNH NÔNG VỤ NASA (CHUẨN HÓA AGTECH)
 # -----------------------------------------------------------------------------
-DANH_MUC = [
-    "📊  Bảng điều khiển",
-    "🌾  Kế hoạch Luân canh & Sức khỏe Đất",
-    "🎯  Thời vụ & Dự báo Năng suất 2027",
-    "📈  So sánh Lịch sử các năm",
-    "🗺️  Bản đồ & Vệ tinh NASA",
-    "🍃  Phân tích Thảm thực vật (NDVI)",
-    "💧  Độ ẩm đất (SMAP)",
-    "🌧️  Lượng mưa (GPM)",
-    "🌡️  Nhiệt độ bề mặt (LST)",
-    "ƒx  Công thức & Thuật toán",
-    "📥  Tải dữ liệu API",
-]
+PHAN_HE_NAV = {
+    "🌾 Nông Vụ": [
+        "📊  Bảng điều khiển",
+        "🌾  Kế hoạch Luân canh",
+        "🎯  Thời vụ & Dự báo 2027",
+    ],
+    "🛰️ Viễn Thám": [
+        "🗺️  Bản đồ & Vệ tinh NASA",
+        "🍃  Thảm thực vật (NDVI)",
+        "💧  Độ ẩm đất (SMAP)",
+        "🌧️  Lượng mưa (GPM)",
+        "🌡️  Nhiệt độ bề mặt (LST)",
+    ],
+    "📊 Dữ Liệu": [
+        "📈  Đối chiếu Lịch sử",
+        "ƒx  Công thức & Thuật toán",
+        "📥  Kho Dữ liệu & API",
+    ],
+}
+
+DANH_MUC = (
+    PHAN_HE_NAV["🌾 Nông Vụ"]
+    + PHAN_HE_NAV["🛰️ Viễn Thám"]
+    + PHAN_HE_NAV["📊 Dữ Liệu"]
+)
 
 TRANG = {
+    # 1. Phân hệ Nông vụ
     "📊  Bảng điều khiển": tong_quan.hien,
-    "🌾  Kế hoạch Luân canh & Sức khỏe Đất": luan_canh.hien,
-    "🎯  Thời vụ & Dự báo Năng suất 2027": du_bao_nang_suat.hien,
-    "📈  So sánh Lịch sử các năm": so_sanh.hien,
+    "🌾  Kế hoạch Luân canh": luan_canh.hien,
+    "🎯  Thời vụ & Dự báo 2027": du_bao_nang_suat.hien,
+    # 2. Phân hệ Viễn thám
     "🗺️  Bản đồ & Vệ tinh NASA": ho_so_yen_thanh.hien,
-    "🍃  Phân tích Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
+    "🍃  Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
     "💧  Độ ẩm đất (SMAP)": chi_tiet_nasa.hien_do_am,
     "🌧️  Lượng mưa (GPM)": chi_tiet_nasa.hien_luong_mua,
     "🌡️  Nhiệt độ bề mặt (LST)": chi_tiet_nasa.hien_nhiet_do,
+    # 3. Phân hệ Dữ liệu
+    "📈  Đối chiếu Lịch sử": so_sanh.hien,
     "ƒx  Công thức & Thuật toán": chi_tiet_nasa.hien_cong_thuc_thuat_toan,
+    "📥  Kho Dữ liệu & API": chi_tiet_nasa.hien_tai_du_lieu_api,
+    # Tương thích ngược với tên cũ
+    "🌾  Kế hoạch Luân canh & Sức khỏe Đất": luan_canh.hien,
+    "🎯  Thời vụ & Dự báo Năng suất 2027": du_bao_nang_suat.hien,
+    "📈  So sánh Lịch sử các năm": so_sanh.hien,
+    "🍃  Phân tích Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
     "📥  Tải dữ liệu API": chi_tiet_nasa.hien_tai_du_lieu_api,
 }
 
@@ -93,29 +114,104 @@ nam = st.session_state["nam_ke_hoach"]
 # SIDEBAR THEME COMMAND CENTER (NASA NEDA)
 # =============================================================================
 with st.sidebar:
-    # 1. HEADER BRANDING NASA CHUẨN XÁC (KHÔNG DÙNG MULTILINE INDENT TRÁNH LỖI CODEBLOCK)
+    # 1. HEADER BRANDING NASA CHUẨN XÁC
     html_sidebar_brand = (
-        '<div style="padding:6px 2px 18px 2px; border-bottom:1px solid #1E293B; margin-bottom:16px;">'
-        '<div style="display:flex; align-items:center; gap:12px;">'
+        '<div style="padding:4px 2px 14px 2px; border-bottom:1px solid #1E293B; margin-bottom:14px;">'
+        '<div style="display:flex; align-items:center; gap:10px;">'
         f'{NASA_LOGO_SVG}'
         '<div>'
-        '<div style="font-size:13.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.5px; line-height:1.25; text-transform:uppercase;">HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)</div>'
-        '<div style="font-size:11.5px; color:#2DD4BF; font-weight:700; margin-top:3px;">RotaNA · Vựa lúa Yên Thành</div>'
+        '<div style="font-size:13px; font-weight:800; color:#F8FAFC; letter-spacing:0.4px; line-height:1.2; text-transform:uppercase;">HỆ THỐNG VIỄN THÁM NASA</div>'
+        '<div style="font-size:11.5px; color:#2DD4BF; font-weight:700; margin-top:2px;">NEDA · Vựa lúa Yên Thành</div>'
         '</div>'
         '</div>'
         '</div>'
     )
     st.markdown(html_sidebar_brand, unsafe_allow_html=True)
 
-    # 2. MENU ĐIỀU HƯỚNG DẠNG LIST CARD CÓ ACTIVE TEAL
-    if "menu_dieu_huong" not in st.session_state:
-        st.session_state["menu_dieu_huong"] = DANH_MUC[0]
+    # 2. BỘ CHỌN PHÂN HỆ SỐ HÓA (3 TRỤ CỘT CHUẨN HÓA AGTECH)
+    cur_page = st.session_state.get("menu_dieu_huong", "📊  Bảng điều khiển")
+
+    # Chuẩn hóa nếu trang hiện tại đang lưu tên cũ
+    ten_moi_map = {
+        "🌾  Kế hoạch Luân canh & Sức khỏe Đất": "🌾  Kế hoạch Luân canh",
+        "🎯  Thời vụ & Dự báo Năng suất 2027": "🎯  Thời vụ & Dự báo 2027",
+        "📈  So sánh Lịch sử các năm": "📈  Đối chiếu Lịch sử",
+        "🍃  Phân tích Thảm thực vật (NDVI)": "🍃  Thảm thực vật (NDVI)",
+        "📥  Tải dữ liệu API": "📥  Kho Dữ liệu & API",
+    }
+    if cur_page in ten_moi_map:
+        cur_page = ten_moi_map[cur_page]
+        st.session_state["menu_dieu_huong"] = cur_page
+
+    # Tự động tìm phân hệ phù hợp với trang đang chọn
+    current_module = "🌾 Nông Vụ"
+    for mod_name, items in PHAN_HE_NAV.items():
+        if cur_page in items:
+            current_module = mod_name
+            break
+
+    if "sel_phan_he_sidebar" not in st.session_state:
+        st.session_state["sel_phan_he_sidebar"] = current_module
+
+    # Đồng bộ khi cur_page chuyển từ bên ngoài (Quick Action)
+    if st.session_state["sel_phan_he_sidebar"] != "📋 Tất Cả" and cur_page not in PHAN_HE_NAV.get(st.session_state["sel_phan_he_sidebar"], []):
+        st.session_state["sel_phan_he_sidebar"] = current_module
+
+    st.markdown(
+        '<div style="font-size:11px; font-weight:750; color:#64748B; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px;">'
+        '🏛️ PHÂN HỆ CHỨC NĂNG:'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    phan_he_chon = st.pills(
+        "Phân hệ chức năng:",
+        options=["🌾 Nông Vụ", "🛰️ Viễn Thám", "📊 Dữ Liệu", "📋 Tất Cả"],
+        default=st.session_state["sel_phan_he_sidebar"],
+        key="pills_phan_he_sidebar",
+        label_visibility="collapsed",
+    )
+    if phan_he_chon and phan_he_chon != st.session_state["sel_phan_he_sidebar"]:
+        st.session_state["sel_phan_he_sidebar"] = phan_he_chon
+        if phan_he_chon != "📋 Tất Cả":
+            first_item = PHAN_HE_NAV[phan_he_chon][0]
+            if cur_page not in PHAN_HE_NAV[phan_he_chon]:
+                st.session_state["menu_dieu_huong"] = first_item
+        st.rerun()
+
+    active_module = st.session_state["sel_phan_he_sidebar"]
+    if active_module == "📋 Tất Cả":
+        options_hien_thi = DANH_MUC
+    else:
+        options_hien_thi = PHAN_HE_NAV.get(active_module, PHAN_HE_NAV["🌾 Nông Vụ"])
+
+    # 3. MENU ĐIỀU HƯỚNG DẠNG LIST CARD CÓ ACTIVE TEAL
+    idx_default = 0
+    if cur_page in options_hien_thi:
+        idx_default = options_hien_thi.index(cur_page)
 
     trang = st.radio(
         "Menu điều hướng:",
-        options=DANH_MUC,
+        options=options_hien_thi,
+        index=idx_default,
         key="menu_dieu_huong",
         label_visibility="collapsed",
+    )
+
+    # 4. SIDEBAR FOOTER TELEMETRY STATUS
+    st.markdown(
+        """
+        <div style="margin-top:20px; padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px;">
+          <div style="font-size:11px; font-weight:750; color:#2DD4BF; display:flex; align-items:center; gap:6px;">
+            <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#2DD4BF; box-shadow:0 0 8px #2DD4BF;"></span> HỆ THỐNG TRỰC TUYẾN
+          </div>
+          <div style="font-size:11px; color:#94A3B8; margin-top:3px; line-height:1.4;">
+            Yên Thành · 26.500 ha lúa nước<br>
+            Vệ tinh: MODIS · SMAP · GPM
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     if dl.empty:
