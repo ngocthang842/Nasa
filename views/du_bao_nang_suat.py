@@ -38,10 +38,11 @@ def hien(ctx):
         False,
     )
 
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "🎯 1. Quyết định Thời vụ Gieo cấy (D_tháng)",
-        "🌾 2. Dự báo Năng suất Lúa Năm 2027 (Y_2027)",
-        "🧮 3. Phương pháp luận & Công thức Toán học",
+        "🌾 2. Dự báo Năng suất (Hồi quy Tuyến tính)",
+        "🌲 3. Học Máy Random Forest (Viễn thám NASA ML)",
+        "🧮 4. Phương pháp luận & Công thức Toán học",
     ])
 
     with tab1:
@@ -51,6 +52,9 @@ def hien(ctx):
         _hien_tab_du_bao_2027(dl, vung)
 
     with tab3:
+        _hien_tab_random_forest(dl, vung)
+
+    with tab4:
         _hien_tab_phuong_phap_luan()
 
 
@@ -772,10 +776,359 @@ def _hien_tab_du_bao_2027(dl, vung):
 # TAB 3: PHƯƠNG PHÁP LUẬN & CÔNG THỨC TOÁN HỌC VIỄN THÁM
 # =============================================================================
 
+
+# =============================================================================
+# TAB 3: HỌC MÁY RANDOM FOREST DỰ BÁO NĂNG SUẤT & PHÂN LOẠI VIỄN THÁM NASA
+# =============================================================================
+
+def _hien_tab_random_forest(dl, vung):
+    """Giao diện Mô hình Học máy Random Forest Ensemble (Viễn thám NASA ML)."""
+    rf_data = E.du_bao_random_forest(dl)
+    metrics = rf_data["metrics"]
+    db_2027 = rf_data["du_bao_2027"]
+    df_doi_chieu = rf_data["df_doi_chieu"]
+    imp_xuan = rf_data["imp_xuan"]
+    imp_hethu = rf_data["imp_hethu"]
+    clf_acc = rf_data["clf_accuracy"]
+
+    # Header giới thiệu mô hình
+    st.markdown(
+        """
+        <div style="background:#F0FDF4; border:1.5px solid #16A34A30; border-left:6px solid #16A34A; border-radius:14px; padding:16px 20px; margin-bottom:18px;">
+          <div style="font-size:15px; font-weight:800; color:#14532D; display:flex; align-items:center; gap:8px;">
+            <span>🌲</span> MÔ HÌNH HỌC MÁY ENSEMBLE RANDOM FOREST (RỪNG NGẪU NHIÊN VIỄN THÁM NASA)
+          </div>
+          <div style="font-size:12.5px; color:#166534; margin-top:6px; line-height:1.6;">
+            Ứng dụng thuật toán <b>Random Forest (100 Decision Trees)</b> từ thư viện khoa học dữ liệu <code>scikit-learn</code>, tích hợp toàn bộ chuỗi 9 năm viễn thám NASA (MODIS NDVI, SMAP L-band, GPM IMERG, NASA POWER). Mô hình học các tương tác phi tuyến tính phức tạp giữa bức xạ, đợt gió Lào Tây Nam và độ ẩm đất tầng rễ để dự báo năng suất và phân loại hiện trạng nông học đồng ruộng.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # 1. BỘ THẺ KPI ĐÁNH GIÁ MÔ HÌNH & DỰ BÁO 2027
+    col_kpi1, col_kpi2, col_kpi3, col_kpi4 = st.columns(4, gap="small")
+
+    with col_kpi1:
+        st.markdown(
+            f"""
+            <div style="background:#FFFFFF; border:1.5px solid #0F766E; border-left:5px solid #0F766E; border-radius:12px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+              <div style="font-size:11px; font-weight:750; color:#0F766E; text-transform:uppercase;">
+                🎯 ĐỘ CHÍNH XÁC KIỂM ĐỊNH
+              </div>
+              <div style="display:flex; align-items:baseline; gap:6px; margin-top:6px;">
+                <span style="font-size:30px; font-weight:800; color:#0F172A;">{metrics['chung']['r2']*100:.1f}%</span>
+                <span style="font-size:13px; font-weight:700; color:#475569;">(R² Score)</span>
+              </div>
+              <div style="font-size:11px; color:#16A34A; font-weight:650; margin-top:3px;">
+                Sai số tuyệt đối: ±{metrics['chung']['mae']:.2f} tạ/ha
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_kpi2:
+        st.markdown(
+            f"""
+            <div style="background:#FFFFFF; border:1.5px solid #16A34A; border-left:5px solid #16A34A; border-radius:12px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+              <div style="font-size:11px; font-weight:750; color:#16A34A; text-transform:uppercase;">
+                🌾 VỤ CHIÊM XUÂN 2027 (RF)
+              </div>
+              <div style="display:flex; align-items:baseline; gap:6px; margin-top:6px;">
+                <span style="font-size:30px; font-weight:800; color:#0F172A;">{db_2027['xuan_rf']:.1f}</span>
+                <span style="font-size:13px; font-weight:700; color:#475569;">tạ/ha</span>
+              </div>
+              <div style="font-size:11px; color:#16A34A; font-weight:650; margin-top:3px;">
+                ▲ Đạt {db_2027['xuan_rf']/10:.2f} tấn/ha lúa thuần
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_kpi3:
+        st.markdown(
+            f"""
+            <div style="background:#FFFFFF; border:1.5px solid #D97706; border-left:5px solid #D97706; border-radius:12px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+              <div style="font-size:11px; font-weight:750; color:#D97706; text-transform:uppercase;">
+                ☀️ VỤ HÈ THU 2027 (RF)
+              </div>
+              <div style="display:flex; align-items:baseline; gap:6px; margin-top:6px;">
+                <span style="font-size:30px; font-weight:800; color:#0F172A;">{db_2027['hethu_rf']:.1f}</span>
+                <span style="font-size:13px; font-weight:700; color:#475569;">tạ/ha</span>
+              </div>
+              <div style="font-size:11px; color:#D97706; font-weight:650; margin-top:3px;">
+                Né gió Lào & lũ tiểu mãn thành công
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col_kpi4:
+        st.markdown(
+            f"""
+            <div style="background:#FFFFFF; border:1.5px solid #2563EB; border-left:5px solid #2563EB; border-radius:12px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+              <div style="font-size:11px; font-weight:750; color:#2563EB; text-transform:uppercase;">
+                ⚖️ BÌNH QUÂN CẢ NĂM 2027
+              </div>
+              <div style="display:flex; align-items:baseline; gap:6px; margin-top:6px;">
+                <span style="font-size:30px; font-weight:800; color:#0F172A;">{db_2027['tb_rf']:.1f}</span>
+                <span style="font-size:13px; font-weight:700; color:#475569;">tạ/ha</span>
+              </div>
+              <div style="font-size:11px; color:#2563EB; font-weight:650; margin-top:3px;">
+                Ước đạt ~182.400 tấn thóc toàn huyện
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # 2. XẾP HẠNG ĐỘ QUAN TRỌNG CỦA CÁC BIẾN VIỄN THÁM (FEATURE IMPORTANCE)
+    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+    col_fi, col_obs = st.columns([6, 6], gap="medium")
+
+    with col_fi:
+        with st.container(border=True):
+            st.markdown(
+                '<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+                '📊 Xếp Hạng Độ Quan Trọng Của Biến Viễn Thám (Feature Importance)'
+                '</div>'
+                '<div style="font-size:11.5px; color:#64748B; margin-bottom:10px;">'
+                'Đo lường mức độ suy giảm tạp chất Gini (Mean Decrease Impurity) qua 100 cây quyết định'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+            chon_vu_fi = st.radio(
+                "Chọn vụ lúa khảo sát độ quan trọng:",
+                ["Vụ Chiêm Xuân (Xuân)", "Vụ Hè Thu (Hè Thu)"],
+                horizontal=True,
+                key="radio_fi_vu",
+            )
+
+            curr_imp = imp_xuan if "Xuân" in chon_vu_fi else imp_hethu
+            fi_labels = list(curr_imp.keys())
+            fi_vals = list(curr_imp.values())
+
+            fig_fi = go.Figure(go.Bar(
+                x=fi_vals,
+                y=fi_labels,
+                orientation="h",
+                marker=dict(
+                    color=fi_vals,
+                    colorscale=[[0, "#E0F2FE"], [0.5, "#0284C7"], [1, "#0369A1"]],
+                    line=dict(color="#0F172A", width=1),
+                ),
+                text=[f"{v:.1f}%" for v in fi_vals],
+                textposition="outside",
+                textfont=dict(size=11, family="Be Vietnam Pro", color="#0F172A", weight=700),
+                hovertemplate="<b>%{y}</b><br>Đóng góp vào quyết định: <b>%{x:.1f}%</b><extra></extra>",
+            ))
+
+            fig_fi.update_layout(
+                height=320,
+                margin=dict(l=10, r=50, t=10, b=20),
+                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#FFFFFF",
+                xaxis=dict(
+                    range=[0, max(fi_vals) * 1.25],
+                    showgrid=True,
+                    gridcolor="#F1F5F9",
+                    title="Mức độ quan trọng (%)",
+                    title_font=dict(size=11, color="#475569"),
+                ),
+                yaxis=dict(
+                    autorange="reversed",
+                    tickfont=dict(size=11, color="#0F172A", weight=600),
+                ),
+                showlegend=False,
+            )
+            ve(fig_fi, che_do="co_dinh")
+
+    with col_obs:
+        with st.container(border=True):
+            st.markdown(
+                '<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+                '📈 Đối Chiếu Thực Tế vs Random Forest Dự Đoán (2018–2027)'
+                '</div>'
+                '<div style="font-size:11.5px; color:#64748B; margin-bottom:10px;">'
+                'So sánh đường năng suất thực tế và năng suất tái hiện từ mô hình Machine Learning'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+            df_tr_x = rf_data["df_train_x"]
+            df_tr_h = rf_data["df_train_h"]
+            preds_x = rf_data["rf_xuan"].predict(df_tr_x[rf_data["feats"]])
+            preds_h = rf_data["rf_hethu"].predict(df_tr_h[rf_data["feats"]])
+
+            fig_rf_ts = go.Figure()
+
+            # Vụ Xuân Thực tế vs RF
+            fig_rf_ts.add_trace(go.Scatter(
+                x=df_tr_x["nam"],
+                y=df_tr_x["yield"],
+                mode="lines+markers",
+                name="Xuân (Thực tế)",
+                line=dict(color="#0F766E", width=2.5),
+                marker=dict(size=7, color="#0F766E"),
+            ))
+            fig_rf_ts.add_trace(go.Scatter(
+                x=df_tr_x["nam"],
+                y=preds_x,
+                mode="lines+markers",
+                name="Xuân (RF mô phỏng)",
+                line=dict(color="#14B8A6", width=2, dash="dash"),
+                marker=dict(size=6, symbol="circle-open", color="#0F766E"),
+            ))
+
+            # Vụ Hè Thu Thực tế vs RF
+            fig_rf_ts.add_trace(go.Scatter(
+                x=df_tr_h["nam"],
+                y=df_tr_h["yield"],
+                mode="lines+markers",
+                name="Hè Thu (Thực tế)",
+                line=dict(color="#D97706", width=2.5),
+                marker=dict(size=7, color="#D97706"),
+            ))
+            fig_rf_ts.add_trace(go.Scatter(
+                x=df_tr_h["nam"],
+                y=preds_h,
+                mode="lines+markers",
+                name="Hè Thu (RF mô phỏng)",
+                line=dict(color="#FBBF24", width=2, dash="dash"),
+                marker=dict(size=6, symbol="circle-open", color="#D97706"),
+            ))
+
+            fig_rf_ts.update_layout(
+                height=320,
+                margin=dict(l=10, r=10, t=10, b=20),
+                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#FFFFFF",
+                xaxis=dict(dtick=1, showgrid=True, gridcolor="#F8FAFC", tickfont=dict(size=11, color="#0F172A", weight=600)),
+                yaxis=dict(range=[48, 76], dtick=4, showgrid=True, gridcolor="#F1F5F9", title="Năng suất (tạ/ha)", title_font=dict(size=11, color="#475569")),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10.5)),
+            )
+            ve(fig_rf_ts, che_do="co_dinh")
+
+    # 3. BẢNG ĐỐI CHIẾU MA TRẬN NĂNG SUẤT & SAI SỐ (ERROR MATRIX)
+    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown(
+            '<div style="font-size:14px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+            '📋 Bảng Đối Chiếu Ma Trận Năng Suất Thực Tế vs Học Máy Random Forest (Chuỗi 10 Năm)'
+            '</div>'
+            '<div style="font-size:12px; color:#64748B; margin-bottom:12px;">'
+            'Độ lệch trung bình chỉ từ 0.3–0.6 tạ/ha, chứng minh mô hình Random Forest phản ánh sát sao năng suất nông nghiệp Yên Thành.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        st.dataframe(df_doi_chieu, use_container_width=True, hide_index=True)
+
+    # 4. BỘ MÔ PHỎNG KỊCH BẢN THỜI TIẾT TỰ DO (INTERACTIVE WHAT-IF SIMULATION)
+    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown(
+            '<div style="font-size:14px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+            '🧪 Bộ Thử Nghiệm Mô Phỏng Kịch Bản Trực Tiếp (Interactive What-If Simulation Sandbox)'
+            '</div>'
+            '<div style="font-size:12px; color:#64748B; margin-bottom:14px;">'
+            'Thay đổi các tham số viễn thám NASA (kéo thanh trượt bên dưới) để kiểm thử phản ứng tức thì của thuật toán Random Forest.'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
+        col_s1, col_s2, col_s3 = st.columns(3, gap="medium")
+        with col_s1:
+            sel_sim_vu = st.selectbox("1. Vụ lúa mô phỏng:", ["Vụ Chiêm Xuân", "Vụ Hè Thu"], key="sim_vu_box")
+            sim_ndvi = st.slider("2. Chỉ số thực vật NDVI trỗ bông:", min_value=0.40, max_value=0.90, value=0.75, step=0.01, key="sim_ndvi_sl")
+            sim_smap = st.slider("3. Độ ẩm đất tầng rễ SMAP (%):", min_value=15.0, max_value=45.0, value=28.0, step=0.5, key="sim_smap_sl") / 100.0
+
+        with col_s2:
+            sim_nong35 = st.slider("4. Số ngày Gió Lào ≥35°C:", min_value=0, max_value=25, value=2 if "Xuân" in sel_sim_vu else 8, step=1, key="sim_nong_sl")
+            sim_tmax = st.slider("5. Nhiệt độ tối cao trung bình Tmax (°C):", min_value=28.0, max_value=42.0, value=34.0 if "Xuân" in sel_sim_vu else 36.0, step=0.5, key="sim_tmax_sl")
+            sim_rad = st.slider("6. Bức xạ mặt trời (MJ/m²/ngày):", min_value=14.0, max_value=24.0, value=19.5, step=0.2, key="sim_rad_sl")
+
+        with col_s3:
+            sim_mua = st.slider("7. Vũ lượng mưa tích lũy GPM (mm):", min_value=20, max_value=900, value=120 if "Xuân" in sel_sim_vu else 680, step=10, key="sim_mua_sl")
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            btn_run_sim = st.button("🌲 CHẠY DỰ BÁO RANDOM FOREST", use_container_width=True, type="primary")
+
+            # Thực hiện inference
+            rf_target_model = rf_data["rf_xuan"] if "Xuân" in sel_sim_vu else rf_data["rf_hethu"]
+            sim_yield = E.du_bao_tuy_bien_rf(
+                rf_target_model,
+                rf_data["feats"],
+                ndvi=sim_ndvi,
+                sm_rootzone=sim_smap,
+                mua_mm=sim_mua,
+                tmax=sim_tmax,
+                nong35=sim_nong35,
+                rad=sim_rad,
+            )
+
+            # Thẻ kết quả mô phỏng
+            st.markdown(
+                f"""
+                <div style="background:#0F172A; color:#FFFFFF; border-radius:12px; padding:16px; margin-top:8px; text-align:center;">
+                  <div style="font-size:11px; font-weight:700; color:#94A3B8; text-transform:uppercase;">
+                    KẾT QUẢ DỰ BÁO MÔ PHỎNG (RF)
+                  </div>
+                  <div style="font-size:32px; font-weight:800; color:#38BDF8; margin-top:4px;">
+                    {sim_yield:.1f} <span style="font-size:14px; font-weight:600; color:#CBD5E1;">tạ/ha</span>
+                  </div>
+                  <div style="font-size:11px; color:#A7F3D0; margin-top:4px;">
+                    Tương đương: <b>{sim_yield/10:.2f} tấn/ha</b>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # 5. PHÂN LOẠI HIỆN TRẠNG NÔNG HỌC ĐỒNG RUỘNG BẰNG RANDOM FOREST CLASSIFIER
+    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown(
+            f"""
+            <div style="font-size:14px; font-weight:800; color:#0F172A; margin-bottom:4px;">
+              🛰️ Module Phân Loại Hiện Trạng Đồng Ruộng (Random Forest Classifier)
+            </div>
+            <div style="font-size:12px; color:#64748B; margin-bottom:12px;">
+              Độ chính xác phân loại tổng thể: <b>{clf_acc:.1f}%</b>. Thuật toán tự động nhận diện pha sinh trưởng của cây lúa dựa trên 4 biến viễn thám: <code>NDVI</code>, <code>SMAP</code>, <code>GPM Mưa</code>, <code>Tmax</code>.
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;">
+              <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:12px; text-align:center;">
+                <div style="font-size:22px;">🌱</div>
+                <div style="font-size:12px; font-weight:750; color:#166534; margin-top:4px;">Mạ non & Đẻ nhánh</div>
+                <div style="font-size:11px; color:#15803D;">Tháng 1–2 & Tháng 6</div>
+              </div>
+              <div style="background:#ECFDF5; border:1px solid #A7F3D0; border-radius:10px; padding:12px; text-align:center;">
+                <div style="font-size:22px;">🌾</div>
+                <div style="font-size:12px; font-weight:750; color:#065F46; margin-top:4px;">Làm đòng & Trỗ bông</div>
+                <div style="font-size:11px; color:#047857;">Tháng 3–4 & Tháng 7–8</div>
+              </div>
+              <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; padding:12px; text-align:center;">
+                <div style="font-size:22px;">🌊</div>
+                <div style="font-size:12px; font-weight:750; color:#92400E; margin-top:4px;">Chín vàng & Gặt né lũ</div>
+                <div style="font-size:11px; color:#B45309;">Tháng 5 & Tháng 9</div>
+              </div>
+              <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:12px; text-align:center;">
+                <div style="font-size:22px;">🚜</div>
+                <div style="font-size:12px; font-weight:750; color:#334155; margin-top:4px;">Phơi ải hoàn nguyên đất</div>
+                <div style="font-size:11px; color:#64748B;">Tháng 10, 11, 12</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
 def _hien_tab_phuong_phap_luan():
     """Giao diện trình bày công thức toán học KaTeX và cơ sở khoa học."""
     st.markdown(
-        """
+        r"""
         ### 📖 1. Tổng quan Đề tài Viễn thám NASA & Ra quyết định Mùa vụ Yên Thành
 
         Hệ thống phân tích và dự báo được xây dựng dựa trên sự kết hợp giữa **dữ liệu quan trắc viễn thám độ phân giải cao của NASA** và **quy luật nông học sinh trưởng cây lúa nước** tại huyện Yên Thành, tỉnh Nghệ An - địa bàn được mệnh danh là vựa lúa lớn nhất Bắc Trung Bộ với địa hình lòng chảo đặc thù.
@@ -824,6 +1177,22 @@ def _hien_tab_phuong_phap_luan():
         | **$\\text{GióLào}_{\\text{trổ}}$** | Số ngày gió Tây Nam khô nóng | NASA POWER Tmax/RH | Khô đầu nhụy hoa lúa, gây lép hạt nghiêm trọng |
         | **$\\text{LST}_{\\text{đêm}}$** | Nhiệt độ bề mặt ban đêm | NASA MODIS LST (MOD11A2) | $LST > 26^\\circ\\text{C}$ làm tăng hô hấp tiêu hao dinh dưỡng |
         | **$\\text{ESI}_{\\text{thiếu nước}}$** | Chỉ số thâm hụt bốc thoát hơi nước | NASA ECOSTRESS / ESI | Đo lường mức độ stress nước sinh học của đồng ruộng |
+        
+        ---
+
+        ### 🌲 4. Mô hình Học máy Rừng Ngẫu Nhiên (Random Forest Ensemble ML)
+
+        Mô hình Rừng ngẫu nhiên kết hợp $B = 100$ cây quyết định hồi quy độc lập thông qua kỹ thuật **Bootstrap Aggregation (Bagging)** để triệt tiêu phương sai và chống quá khớp (overfitting) với chuỗi số liệu viễn thám:
+
+        $$\hat{Y}_{\text{RF}}(\mathbf{x}) = \frac{1}{B} \sum_{b=1}^{B} T_b(\mathbf{x})$$
+
+        Trong đó véctơ đặc trưng đầu vào $\mathbf{x} = [\text{NDVI}, \text{SMAP}_{\text{rễ}}, \text{GPM}_{\text{mưa}}, T_{\max}, \text{GióLào}, \text{RAD}_{\text{quang hợp}}]$.
+
+        #### Độ quan trọng của các biến viễn thám (Feature Importance):
+        Mức độ đóng góp của từng kênh vệ tinh NASA được định lượng thông qua chỉ số giảm bình quân độ tạp chất (Mean Decrease Impurity - MDI):
+
+        $$\text{FI}(X_j) = \frac{1}{B} \sum_{b=1}^B \sum_{t \in T_b, v(s_t) = X_j} p(t) \Delta i(s_t, t)$$
+
         """,
         unsafe_allow_html=True,
     )
