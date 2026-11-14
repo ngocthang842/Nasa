@@ -20,7 +20,13 @@ header[data-testid="stHeader"] {background:transparent;}
   padding: 1.2rem 1.6rem 2.5rem;
   max-width: 1440px;
 }
-.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp p, .stApp label, .stApp li {
+div[data-testid="stMain"] h1,
+div[data-testid="stMain"] h2,
+div[data-testid="stMain"] h3,
+div[data-testid="stMain"] h4,
+div[data-testid="stMain"] p,
+div[data-testid="stMain"] label,
+div[data-testid="stMain"] li {
   color: #0F172A;
 }
 
@@ -34,21 +40,16 @@ header[data-testid="stHeader"] {background:transparent;}
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Text tiêu đề, label và caption trong Sidebar */
+[data-testid="stSidebar"] * {
+  color: #94A3B8;
+}
+
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] label,
-[data-testid="stSidebar"] [data-testid="stWidgetLabel"] *,
-[data-testid="stSidebar"] .stMarkdown p {
+[data-testid="stSidebar"] b,
+[data-testid="stSidebar"] strong {
   color: #F8FAFC !important;
-}
-
-[data-testid="stSidebar"] .stCaption,
-[data-testid="stSidebar"] small,
-[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
-  color: #64748B !important;
-  font-size: 11px !important;
 }
 
 /* ĐIỀU CHỈNH DROPDOWN / SELECTBOX TRONG SIDEBAR THEME TỐI */
@@ -111,72 +112,66 @@ ul[role="listbox"] li:hover * {
 
 /* THIẾT KẾ MENU SIDEBAR NASA NEDA DẠNG LIST CARD CÓ ACTIVE TEAL */
 [data-testid="stSidebar"] [role="radiogroup"] {
+  display: flex !important;
+  flex-direction: column !important;
   gap: 3px !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] > label {
+[data-testid="stSidebar"] [role="radiogroup"] > label,
+[data-testid="stSidebar"] [role="radiogroup"] label[data-baseweb="radio"] {
   display: flex !important;
   align-items: center !important;
   background: transparent !important;
   border: 1px solid transparent !important;
   border-radius: 8px !important;
   padding: 9px 12px !important;
-  margin-bottom: 2px !important;
+  margin: 1px 0 !important;
   cursor: pointer !important;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] > label:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
+[data-testid="stSidebar"] [role="radiogroup"] label:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] > label:hover p {
+[data-testid="stSidebar"] [role="radiogroup"] label:hover,
+[data-testid="stSidebar"] [role="radiogroup"] label:hover * {
   color: #F8FAFC !important;
 }
 
 /* Ẩn dấu chấm tròn radio mặc định của Streamlit */
-[data-testid="stSidebar"] [role="radiogroup"] > label > div:first-child {
+[data-testid="stSidebar"] [role="radiogroup"] input[type="radio"],
+[data-testid="stSidebar"] [role="radiogroup"] label > div:first-child,
+[data-testid="stSidebar"] [role="radiogroup"] label div[class*="RadioMark"],
+[data-testid="stSidebar"] [role="radiogroup"] label [data-testid="stRadioMark"] {
   display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] > label input[type="radio"] {
-  display: none !important;
-}
-
-[data-testid="stSidebar"] [role="radiogroup"] > label p {
+[data-testid="stSidebar"] [role="radiogroup"] label,
+[data-testid="stSidebar"] [role="radiogroup"] label * {
   color: #94A3B8 !important;
   font-size: 13.5px !important;
   font-weight: 550 !important;
-  margin: 0 !important;
-  line-height: 1.3 !important;
-}
-
-[data-testid="stSidebar"] [role="radiogroup"] > label [data-testid="stCaptionContainer"] *,
-[data-testid="stSidebar"] [role="radiogroup"] > label caption,
-[data-testid="stSidebar"] [role="radiogroup"] > label small {
-  color: #64748B !important;
-  font-size: 11px !important;
-  margin-top: 2px !important;
+  line-height: 1.35 !important;
 }
 
 /* MỤC MENU ĐANG CHỌN (ACTIVE) -> NỀN XANH TEAL TRONG SUỐT + VIỀN PHẢI XANH NGỌC CỰC ĐẸP */
-[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) {
-  background: rgba(20, 184, 166, 0.16) !important;
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+  background: rgba(20, 184, 166, 0.18) !important;
   border-right: 4px solid #14B8A6 !important;
   border-radius: 8px 0 0 8px !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) p {
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked),
+[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) * {
   color: #2DD4BF !important;
   font-weight: 750 !important;
-}
-
-[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) [data-testid="stCaptionContainer"] *,
-[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) caption,
-[data-testid="stSidebar"] [role="radiogroup"] > label:has(input:checked) small {
-  color: #5EEAD4 !important;
-  font-weight: 600 !important;
 }
 
 /* Radio ngang (Chế độ xem Đợt vs Tháng) */
@@ -362,20 +357,7 @@ button[kind="primary"]:hover,
 </style>
 """
 
-NASA_LOGO_SVG = """
-<svg width="38" height="38" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="60" cy="60" r="58" fill="#0B3D91"/>
-  <circle cx="28" cy="38" r="1.6" fill="#FFFFFF"/>
-  <circle cx="46" cy="22" r="1.3" fill="#FFFFFF"/>
-  <circle cx="86" cy="28" r="1.8" fill="#FFFFFF"/>
-  <circle cx="96" cy="62" r="1.4" fill="#FFFFFF"/>
-  <circle cx="34" cy="84" r="1.6" fill="#FFFFFF"/>
-  <circle cx="76" cy="88" r="1.3" fill="#FFFFFF"/>
-  <path d="M20 62 L98 34 L78 52 L96 56 L38 80 Z" fill="#FC3D21"/>
-  <ellipse cx="60" cy="60" rx="52" ry="19" stroke="#FFFFFF" stroke-width="2.6" fill="none" transform="rotate(-32 60 60)"/>
-  <text x="60" y="69" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="28" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">NASA</text>
-</svg>
-"""
+NASA_LOGO_SVG = '<svg width="34" height="34" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0;"><circle cx="60" cy="60" r="58" fill="#0B3D91"/><circle cx="28" cy="38" r="1.6" fill="#FFFFFF"/><circle cx="46" cy="22" r="1.3" fill="#FFFFFF"/><circle cx="86" cy="28" r="1.8" fill="#FFFFFF"/><circle cx="96" cy="62" r="1.4" fill="#FFFFFF"/><circle cx="34" cy="84" r="1.6" fill="#FFFFFF"/><circle cx="76" cy="88" r="1.3" fill="#FFFFFF"/><path d="M20 62 L98 34 L78 52 L96 56 L38 80 Z" fill="#FC3D21"/><ellipse cx="60" cy="60" rx="52" ry="19" stroke="#FFFFFF" stroke-width="2.6" fill="none" transform="rotate(-32 60 60)"/><text x="60" y="69" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">NASA</text></svg>'
 
 
 def ve(fig, che_do="co_dinh", **kw):

@@ -43,7 +43,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 DANH_MUC = [
     "📊  Bảng điều khiển",
-    "🛰️  Nguồn Vệ tinh",
+    "🛰️  Nguồn Vệ tinh (MODIS, SMAP...)",
     "🍃  Phân tích Thảm thực vật (NDVI)",
     "💧  Độ ẩm đất",
     "🌧️  Lượng mưa (GPM)",
@@ -52,20 +52,9 @@ DANH_MUC = [
     "📥  Tải dữ liệu API",
 ]
 
-CAPTIONS = [
-    None,
-    "(MODIS, SMAP, Landsat...)",
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-]
-
 TRANG = {
     "📊  Bảng điều khiển": tong_quan.hien,
-    "🛰️  Nguồn Vệ tinh": ho_so_yen_thanh.hien,
+    "🛰️  Nguồn Vệ tinh (MODIS, SMAP...)": ho_so_yen_thanh.hien,
     "🍃  Phân tích Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
     "💧  Độ ẩm đất": chi_tiet_nasa.hien_do_am,
     "🌧️  Lượng mưa (GPM)": chi_tiet_nasa.hien_luong_mua,
@@ -96,33 +85,24 @@ nam = st.session_state["nam_ke_hoach"]
 # SIDEBAR THEME COMMAND CENTER (NASA NEDA)
 # =============================================================================
 with st.sidebar:
-    # 1. HEADER BRANDING NASA CHUẨN XÁC
-    st.markdown(
-        f"""
-        <div style="padding: 6px 0 16px 0; border-bottom: 1px solid #1E293B; margin-bottom: 12px;">
-            <div style="display:flex; align-items:center; gap:11px;">
-                <div style="flex-shrink:0;">
-                    {NASA_LOGO_SVG}
-                </div>
-                <div>
-                    <div style="font-size:12.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.4px; line-height:1.2; text-transform:uppercase;">
-                        HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)
-                    </div>
-                    <div style="font-size:11px; color:#2DD4BF; font-weight:700; margin-top:3px;">
-                        RotaNA · Vựa lúa Yên Thành
-                    </div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    # 1. HEADER BRANDING NASA CHUẨN XÁC (KHÔNG DÙNG MULTILINE INDENT TRÁNH LỖI CODEBLOCK)
+    html_sidebar_brand = (
+        '<div style="padding:4px 0 14px 0; border-bottom:1px solid #1E293B; margin-bottom:12px;">'
+        '<div style="display:flex; align-items:center; gap:10px;">'
+        f'{NASA_LOGO_SVG}'
+        '<div>'
+        '<div style="font-size:12px; font-weight:800; color:#F8FAFC; letter-spacing:0.4px; line-height:1.2; text-transform:uppercase;">HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)</div>'
+        '<div style="font-size:11px; color:#2DD4BF; font-weight:700; margin-top:2px;">RotaNA · Vựa lúa Yên Thành</div>'
+        '</div>'
+        '</div>'
+        '</div>'
     )
+    st.markdown(html_sidebar_brand, unsafe_allow_html=True)
 
     # 2. MENU ĐIỀU HƯỚNG DẠNG LIST CARD CÓ ACTIVE TEAL
     trang = st.radio(
         "Menu điều hướng:",
         options=DANH_MUC,
-        captions=CAPTIONS,
         index=0,
         label_visibility="collapsed",
     )
@@ -136,24 +116,16 @@ with st.sidebar:
 # =============================================================================
 col_top_left, col_top_right = st.columns([7.8, 2.2], gap="small")
 with col_top_left:
-    st.markdown(
-        f"""
-        <div style="display:flex; align-items:center; gap:12px; padding: 2px 0 10px 0;">
-            <div style="flex-shrink:0;">
-                {NASA_LOGO_SVG}
-            </div>
-            <div>
-                <div style="font-size:17px; font-weight:800; color:#0F172A; letter-spacing:0.4px; text-transform:uppercase; line-height:1.2;">
-                    HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)
-                </div>
-                <div style="font-size:12px; color:#0284C7; font-weight:650;">
-                    Giám sát Viễn thám & Ra Quyết định Mùa vụ Lúa nước · Huyện Yên Thành (Nghệ An)
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    html_top_header = (
+        '<div style="display:flex; align-items:center; gap:12px; padding:2px 0 8px 0;">'
+        f'{NASA_LOGO_SVG}'
+        '<div>'
+        '<div style="font-size:17px; font-weight:800; color:#0F172A; letter-spacing:0.4px; text-transform:uppercase; line-height:1.2;">HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)</div>'
+        '<div style="font-size:12px; color:#0284C7; font-weight:650;">Giám sát Viễn thám & Ra Quyết định Mùa vụ Lúa nước · Huyện Yên Thành (Nghệ An)</div>'
+        '</div>'
+        '</div>'
     )
+    st.markdown(html_top_header, unsafe_allow_html=True)
 
 with col_top_right:
     st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
