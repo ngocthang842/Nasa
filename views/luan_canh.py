@@ -1,10 +1,10 @@
-"""Trang Kế hoạch Mùa vụ & Luân canh Đa canh — Vựa lúa Huyện Yên Thành (Nghệ An).
-Thiết kế Số hóa & Chuẩn hóa Dữ liệu (Digitized & Standardized Dashboard Layout):
-- Tầng 1: KPI Ribbon 4 Chỉ số Nông học Số hóa (SHI, Rủi ro khí hậu, Nước tưới, Đạm cố định).
-- Tầng 2: Hệ thống 3 Tabs Tinh gọn, vừa khít màn hình, loại bỏ cuộn dọc dài vô tận:
-  * Tab 1: 🌾 Lập Kế hoạch Mùa vụ & Bảng Ma trận Cơ cấu Cây trồng Số hóa
-  * Tab 2: 🧪 Chỉ số Sức khỏe Đất (Soil Health Index) & So sánh Định lượng
-  * Tab 3: 🛰️ Đối chiếu Khí tượng & Rủi ro Thiên tai Viễn thám NASA
+"""Trang Kế hoạch Mùa vụ & Thuần Lúa Nước — Vựa lúa Huyện Yên Thành (Nghệ An).
+Mô hình chuẩn hóa chuyên canh Thuần Lúa 2 Vụ (Chiêm Xuân & Hè Thu) kết hợp Phơi Ải Vụ Đông:
+- Tầng 1: KPI Ribbon 4 Chỉ số Nông học Số hóa Thuần Lúa (Cơ cấu 100% Lúa, Rủi ro khí hậu, Nước Ba Ra, Làm sạch mầm bệnh).
+- Tầng 2: Hệ thống 3 Tabs Tinh gọn, vừa khít màn hình, loại bỏ cuộn dọc dài:
+  * Tab 1: 🌾 Lập Kế Hoạch 2 Vụ Lúa Thuần & Cơ Cấu Giống Lúa Số Hóa
+  * Tab 2: 🧪 Sức Khỏe Đất Lúa & Quy Trình Cày Phơi Ải Hoàn Nguyên
+  * Tab 3: 🛰️ Đối Chiếu Khí Tượng & Lưới Rủi Ro Thiên Tai NASA Cho Cây Lúa
 """
 import numpy as np
 import pandas as pd
@@ -13,6 +13,10 @@ import streamlit as st
 
 import engine as E
 from views.chung import tieu_de, ve
+
+# DANH MỤC GIỐNG LÚA THUẦN CHỦ LỰC VỰA LÚA YÊN THÀNH
+GIONG_LUA_XUAN = ["ST25 (Gạo ngon thế giới)", "J02 (Lúa Nhật hạt tròn)", "TBR225 (Năng suất đỉnh)", "Bắc Thịnh (Chống rét tốt)"]
+GIONG_LUA_HETHU = ["Khang Dân 18 (Cực ngắn ngày né lũ)", "Đài Thơm 8 (Chịu nhiệt gió Lào)", "BT7 (Chống ngã đổ)", "TBR225"]
 
 
 def _khoa_session(vung, nam, ma):
@@ -25,41 +29,55 @@ def hien(ctx):
     vung = "Yên Thành"
 
     # 1. HEADER CHUẨN
-    tieu_de(vung, thang, nam, "KẾ HOẠCH MÙA VỤ, LUÂN CANH & SỨC KHỎE ĐẤT YÊN THÀNH", len(years) < 2)
+    tieu_de(vung, thang, nam, "KẾ HOẠCH MÙA VỤ & CƠ CẤU 2 VỤ THUẦN LÚA YÊN THÀNH", len(years) < 2)
 
-    # Khởi tạo mô hình mùa vụ mặc định
-    key_che_do = f"che_do_vu_pills_{E.khoa(vung)}_{nam}"
-    if key_che_do not in st.session_state:
-        st.session_state[key_che_do] = "2 Vụ Lúa Thuần"
+    # ĐỊNH HÌNH 3 ĐỢT CHUẨN 2 VỤ LÚA THUẦN + PHƠI ẢI VỤ ĐÔNG
+    cac_dot = [
+        {
+            "ma": "xuan",
+            "ten": "Vụ Lúa Chiêm Xuân",
+            "thang_bat_dau": 1,
+            "thang_ket_thuc": 5,
+            "so_thang": 5,
+            "cay": "Lúa",
+            "icon": "🌾",
+            "mau": "#16A34A",
+            "khuyen_cao": "Gieo mạ chống rét T1, trỗ rộ T4 né gió Lào, thu hoạch dứt điểm T5.",
+        },
+        {
+            "ma": "hethu",
+            "ten": "Vụ Lúa Hè Thu",
+            "thang_bat_dau": 6,
+            "thang_ket_thuc": 9,
+            "so_thang": 4,
+            "cay": "Lúa",
+            "icon": "☀️",
+            "mau": "#D97706",
+            "khuyen_cao": "Cấy cực nhanh đầu T6, chống hạn gió Lào T7, gặt trước 15/9 né lũ Kênh Vách Bắc.",
+        },
+        {
+            "ma": "dong_ai",
+            "ten": "Cày Ải Phơi Ruộng / Vụ Đông",
+            "thang_bat_dau": 10,
+            "thang_ket_thuc": 12,
+            "so_thang": 3,
+            "cay": "Phơi Ải Đất",
+            "icon": "🚜",
+            "mau": "#0284C7",
+            "khuyen_cao": "Cày sâu 18–22 cm phơi khô nỏ đất diệt mầm đạo ôn, đón nước sông Lam T12.",
+        },
+    ]
 
-    che_do_hien_tai = st.session_state[key_che_do]
-
-    if "3 Đợt" in che_do_hien_tai or "Luân Canh" in che_do_hien_tai:
-        cac_dot = [
-            {"ma": "xuan", "ten": "Vụ Xuân Sớm", "thang_bat_dau": 1, "thang_ket_thuc": 4, "so_thang": 4, "cay": "Lúa", "icon": "🌾", "mau": "#16A34A"},
-            {"ma": "hethu", "ten": "Vụ Hè Thu Sớm", "thang_bat_dau": 5, "thang_ket_thuc": 8, "so_thang": 4, "cay": "Lúa", "icon": "☀️", "mau": "#D97706"},
-            {"ma": "dong", "ten": "Vụ Đông (Lạc/Ngô)", "thang_bat_dau": 9, "thang_ket_thuc": 12, "so_thang": 4, "cay": "Lạc", "icon": "🥜", "mau": "#0284C7"},
-        ]
-    else:
-        cac_dot = [
-            {"ma": "xuan", "ten": "Vụ Lúa Chiêm Xuân", "thang_bat_dau": 1, "thang_ket_thuc": 5, "so_thang": 5, "cay": "Lúa", "icon": "🌾", "mau": "#16A34A"},
-            {"ma": "hethu", "ten": "Vụ Lúa Hè Thu", "thang_bat_dau": 6, "thang_ket_thuc": 9, "so_thang": 4, "cay": "Lúa", "icon": "☀️", "mau": "#D97706"},
-            {"ma": "dong_ai", "ten": "Cày Ải & Vụ Đông", "thang_bat_dau": 10, "thang_ket_thuc": 12, "so_thang": 3, "cay": "Ngô / Phơi Ải", "icon": "🚜", "mau": "#0284C7"},
-        ]
-
-    # Kiểm tra dữ liệu kế hoạch người dùng
+    # Kiểm tra và khởi tạo dữ liệu THUẦN LÚA 100% trong session_state
     ke_hoach_nguoi_dung = {}
     danh_gia_cac_dot_map = {}
     for d in cac_dot:
         khoa = _khoa_session(vung, nam, d["ma"])
-        if khoa not in st.session_state:
-            # Gán mặc định cây trồng ban đầu
-            if d["ma"] == "xuan":
+        if khoa not in st.session_state or not st.session_state[khoa]:
+            if d["ma"] in ["xuan", "hethu"]:
                 st.session_state[khoa] = [{"cay": "Lúa", "ty_le_pct": 100}]
-            elif d["ma"] == "hethu":
-                st.session_state[khoa] = [{"cay": "Lúa", "ty_le_pct": 80}, {"cay": "Lạc", "ty_le_pct": 20}] if "3 Đợt" in che_do_hien_tai else [{"cay": "Lúa", "ty_le_pct": 100}]
             else:
-                st.session_state[khoa] = [{"cay": "Lạc", "ty_le_pct": 60}, {"cay": "Ngô", "ty_le_pct": 40}] if "3 Đợt" in che_do_hien_tai else []
+                st.session_state[khoa] = []  # Phơi ải đất 100%
         ke_hoach_nguoi_dung[d["ma"]] = st.session_state[khoa]
 
         df_dg = E.danh_gia_cay_theo_dot(dl, vung, d["thang_bat_dau"], d["thang_ket_thuc"], nam, tb_df)
@@ -67,33 +85,29 @@ def hien(ctx):
 
     danh_gia_nam = E.danh_gia_ke_hoach_nam(cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map)
 
-    # 2. BỘ 4 THẺ SỐ HÓA KPI NÔNG HỌC CỐT LÕI (STANDARDIZED METRIC RIBBON)
+    # 2. BỘ 4 THẺ SỐ HÓA KPI THUẦN LÚA YÊN THÀNH
     shi_score = danh_gia_nam.get("diem_suc_khoe_dat", 85)
-    rr_tb = danh_gia_nam.get("rui_ro_tb_nam", 32)
-    tiet_kiem_nuoc = danh_gia_nam.get("tiet_kiem_nuoc_pct", 20)
-    co_cay_dau = danh_gia_nam.get("co_cay_dau", False)
-    dam_co_dinh = "+45 kg N/ha" if co_cay_dau else "Chưa có cây họ đậu"
+    rr_tb = danh_gia_nam.get("rui_ro_tb_nam", 30)
 
     col_k1, col_k2, col_k3, col_k4 = st.columns(4, gap="small")
     with col_k1:
         st.markdown(
             f"""
             <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #16A34A; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-              <div style="font-size:11px; font-weight:750; color:#16A34A; text-transform:uppercase;">🧪 SỨC KHỎE ĐẤT (SHI)</div>
-              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{shi_score} <small style="font-size:13px; color:#64748B;">/ 100 điểm</small></div>
-              <div style="font-size:11px; color:#16A34A; font-weight:600;">▲ Tốt (Độ phì cao & vi sinh vật)</div>
+              <div style="font-size:11px; font-weight:750; color:#16A34A; text-transform:uppercase;">🌾 CƠ CẤU MÙA VỤ</div>
+              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">100% Thuần Lúa</div>
+              <div style="font-size:11px; color:#16A34A; font-weight:600;">2 Vụ lúa thâm canh / năm</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     with col_k2:
-        col_rr_clr = "#16A34A" if rr_tb < 35 else ("#D97706" if rr_tb < 55 else "#DC2626")
         st.markdown(
             f"""
-            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid {col_rr_clr}; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-              <div style="font-size:11px; font-weight:750; color:{col_rr_clr}; text-transform:uppercase;">🛡️ RỦI RO THỜI TIẾT BÌNH QUÂN</div>
+            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #D97706; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+              <div style="font-size:11px; font-weight:750; color:#D97706; text-transform:uppercase;">🛡️ RỦI RO THỜI TIẾT KHÍ HẬU</div>
               <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{rr_tb:.0f}% <small style="font-size:13px; color:#64748B;">({danh_gia_nam['muc_rui_ro_nam']})</small></div>
-              <div style="font-size:11px; color:#475569;">Gió Lào T7 & Bão lũ T9 được kiểm soát</div>
+              <div style="font-size:11px; color:#475569;">Gió Lào T7 & Bão lũ T9 được né tránh</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -102,9 +116,9 @@ def hien(ctx):
         st.markdown(
             f"""
             <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #0284C7; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-              <div style="font-size:11px; font-weight:750; color:#0284C7; text-transform:uppercase;">💧 TIẾT KIỆM NƯỚC BA RA</div>
-              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">~{tiet_kiem_nuoc}% <small style="font-size:13px; color:#64748B;">nhu cầu nước</small></div>
-              <div style="font-size:11px; color:#0284C7; font-weight:600;">Giảm áp lực cống sông Lam</div>
+              <div style="font-size:11px; font-weight:750; color:#0284C7; text-transform:uppercase;">💧 NƯỚC BA RA ĐÔ LƯƠNG</div>
+              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">Tưới tự chảy <small style="font-size:13px; color:#64748B;">(26.500 ha)</small></div>
+              <div style="font-size:11px; color:#0284C7; font-weight:600;">Kênh chính cấp đủ cho 2 vụ lúa</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -113,9 +127,9 @@ def hien(ctx):
         st.markdown(
             f"""
             <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #8B5CF6; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-              <div style="font-size:11px; font-weight:750; color:#8B5CF6; text-transform:uppercase;">🍂 ĐẠM HỮU CƠ CỐ ĐỊNH</div>
-              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{dam_co_dinh}</div>
-              <div style="font-size:11px; color:#64748B;">Vi sinh nốt sần Rhizobium tự nhiên</div>
+              <div style="font-size:11px; font-weight:750; color:#8B5CF6; text-transform:uppercase;">🍂 LÀM SẠCH ĐẤT (PHƠI ẢI)</div>
+              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{shi_score} <small style="font-size:13px; color:#64748B;">/ 100 điểm</small></div>
+              <div style="font-size:11px; color:#16A34A; font-weight:600;">Diệt 85–90% mầm bệnh đạo ôn</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -123,207 +137,196 @@ def hien(ctx):
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
-    # 3. HỆ THỐNG 3 TABS CHUYÊN MÔN HÓA (LOẠI BỎ CUỘN DÀI)
+    # 3. HỆ THỐNG 3 TABS THUẦN LÚA CHUYÊN BIỆT
     tab1, tab2, tab3 = st.tabs([
-        "🌾 1. Lập Kế Hoạch 3 Vụ & Cơ Cấu Cây Trồng Số Hóa",
-        "🧪 2. Thí Nghiệm Sức Khỏe Đất & So Sánh Định Lượng (SHI)",
-        "🛰️ 3. Đối Chiếu Khí Tượng & Lưới Rủi Ro Thiên Tai NASA",
+        "🌾 1. Lập Kế Hoạch 2 Vụ Thuần Lúa & Cơ Cấu Giống",
+        "🧪 2. Sức Khỏe Đất & Hoàn Nguyên Nhờ Cày Phơi Ải",
+        "🛰️ 3. Lưới Khí Tượng & Rủi Ro Thiên Tai Từng Giai Đoạn",
     ])
 
     with tab1:
-        _hien_tab_lap_ke_hoach(dl, vung, nam, tb_df, cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map, danh_gia_nam)
+        _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map)
 
     with tab2:
-        _hien_tab_suc_khoe_dat(danh_gia_nam)
+        _hien_tab_dat_thuan_lua(danh_gia_nam)
 
     with tab3:
-        _hien_tab_doi_chieu_vi_tri_khi_hau(dl, vung, nam, cac_dot)
+        _hien_tab_khi_tuong_lua(dl, vung, nam)
 
 
 # =============================================================================
-# TAB 1: LẬP KẾ HOẠCH MÙA VỤ & BẢNG MA TRẬN CƠ CẤU CÂY TRỒNG SỐ HÓA
+# TAB 1: KẾ HOẠCH 2 VỤ THUẦN LÚA & CƠ CẤU GIỐNG CHỦ LỰC SỐ HÓA
 # =============================================================================
 
-def _hien_tab_lap_ke_hoach(dl, vung, nam, tb_df, cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map, danh_gia_nam):
-    """Tab 1: Bảng điều khiển cơ cấu mùa vụ số hóa, bảng ma trận và Gantt chart."""
-    # Khung chọn mô hình & Ưu tiên nông dân thu nhỏ, không đè vỡ chữ
-    with st.container(border=True):
-        col_ctrl1, col_ctrl2, col_btn = st.columns([4.2, 4.3, 3.5], gap="small")
-        with col_ctrl1:
-            st.markdown("<div style='font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;'>🌾 1. Khung Mùa Vụ Thực Tế:</div>", unsafe_allow_html=True)
-            kieu_vu = st.selectbox(
-                "Mô hình mùa vụ:",
-                options=["2 Vụ Lúa Thuần (Xuân T1–T5 & Hè Thu T6–T9)", "3 Đợt Luân Canh Lúa – Màu (Xuân T1–T4, Hè Thu T5–T8, Đông T9–T12)"],
-                index=0 if "2 Vụ" in st.session_state.get(f"che_do_vu_pills_{E.khoa(vung)}_{nam}", "") else 1,
-                key=f"sel_kieu_vu_box_{nam}",
-                label_visibility="collapsed",
-            )
-            if kieu_vu != st.session_state.get(f"che_do_vu_pills_{E.khoa(vung)}_{nam}", ""):
-                st.session_state[f"che_do_vu_pills_{E.khoa(vung)}_{nam}"] = kieu_vu
-                st.rerun()
-
-        with col_ctrl2:
-            st.markdown("<div style='font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;'>🎯 2. Mục Tiêu Ưu Tiên Nông Dân:</div>", unsafe_allow_html=True)
-            uu_tien = st.selectbox(
-                "Ưu tiên:",
-                options=[
-                    "🧪 Cải tạo đất & Bồi dưỡng độ phì",
-                    "💧 Tiết kiệm nước & Chống hạn",
-                    "💰 Năng suất & Thu nhập cao",
-                    "🛡️ An toàn & Né thiên tai",
-                ],
-                index=0,
-                key=f"sel_prio_box_{nam}",
-                label_visibility="collapsed",
-            )
-
-        with col_btn:
-            st.markdown("<div style='height:21px;'></div>", unsafe_allow_html=True)
-            if st.button("✨ AI Đề Xuất Tối Ưu Hóa", type="primary", use_container_width=True, help="Tự động tính toán tỷ lệ % cây trồng tối ưu theo viễn thám NASA"):
-                goi_y = E.goi_y_to_hop_toi_uu(dl, vung, nam, cac_dot, uu_tien=uu_tien)
-                for d in cac_dot:
-                    st.session_state[_khoa_session(vung, nam, d["ma"])] = goi_y.get(d["ma"], [])
-                st.toast(f"✅ Đã tối ưu hóa mùa vụ theo: {uu_tien}!", icon="🌾")
-                st.rerun()
-
-    # BẢNG MA TRẬN CƠ CẤU MÙA VỤ SỐ HÓA (DIGITIZED ALLOCATION MATRIX)
-    st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+def _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map):
+    """Tab 1: Bảng ma trận 2 vụ lúa thuần, chọn giống lúa thâm canh và Gantt chart."""
+    # BẢNG MA TRẬN 2 VỤ THUẦN LÚA YÊN THÀNH SỐ HÓA
     with st.container(border=True):
         st.markdown(
-            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">'
-            '  <div>'
-            '    <div style="font-size:13.5px; font-weight:800; color:#0F172A;">📋 Bảng Ma Trận Cơ Cấu Mùa Vụ Chuẩn Hóa Yên Thành</div>'
-            '    <div style="font-size:11.5px; color:#64748B;">Tổng hợp thời gian, giống cây, tỷ lệ diện tích %, rủi ro khí hậu và giải pháp kỹ thuật</div>'
-            '  </div>'
-            '</div>',
+            """
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div>
+                <div style="font-size:13.5px; font-weight:800; color:#0F172A;">📋 Bảng Ma Trận Cơ Cấu 2 Vụ Thuần Lúa Chuẩn Hóa Yên Thành</div>
+                <div style="font-size:11.5px; color:#64748B;">Cơ cấu thuần thục: Lúa Chiêm Xuân (vụ chính) + Lúa Hè Thu (chạy lũ) + Cày ải phơi ruộng vụ đông</div>
+              </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
-        rows_table = []
-        for d in cac_dot:
-            cays = ke_hoach_nguoi_dung.get(d["ma"], [])
-            dg = danh_gia_cac_dot_map.get(d["ma"], {})
-            rr_val = dg.get("rui_ro_to_hop", 35.0)
+        rows_table = [
+            {
+                "Vụ Mùa": "🌾 1. Vụ Lúa Chiêm Xuân",
+                "Khung Thời Gian": "Tháng 1 → Tháng 5 (5 tháng)",
+                "Cây Trồng & Tỷ Lệ": "🌾 Lúa thuần thâm canh (100% diện tích)",
+                "Giống Lúa Khuyến Cáo": "ST25, J02, TBR225, Bắc Thịnh",
+                "Năng Suất Kỳ Vọng": "68–72 tạ/ha (Kỷ lục thâm canh)",
+                "Biện Pháp Trọng Tâm": "Gieo mạ che phủ nilon T1 chống rét, trỗ rộ T4 né táp gió Lào, gặt T5.",
+            },
+            {
+                "Vụ Mùa": "☀️ 2. Vụ Lúa Hè Thu",
+                "Khung Thời Gian": "Tháng 6 → Tháng 9 (4 tháng)",
+                "Cây Trồng & Tỷ Lệ": "🌾 Lúa hè thu ngắn ngày (100% diện tích)",
+                "Giống Lúa Khuyến Cáo": "Khang Dân 18, Đài Thơm 8, BT7",
+                "Năng Suất Kỳ Vọng": "54–58 tạ/ha (Né lụt thành công)",
+                "Biện Pháp Trọng Tâm": "Cấy cực nhanh đầu T6, dâng nước làm mát T7, gặt dứt điểm trước 15/9 né bão lũ.",
+            },
+            {
+                "Vụ Mùa": "🚜 3. Phơi Ải Vụ Đông",
+                "Khung Thời Gian": "Tháng 10 → Tháng 12 (3 tháng)",
+                "Cây Trồng & Tỷ Lệ": "🍂 Cày phơi nỏ ải (100% diện tích)",
+                "Giống Lúa Khuyến Cáo": "Nghỉ đất hoàn nguyên độ phì",
+                "Năng Suất Kỳ Vọng": "Diệt 90% mầm đạo ôn & sâu rầy",
+                "Biện Pháp Trọng Tâm": "Cày sâu 18–22 cm phơi khô ruộng, bón vôi khử chua, đón nước sông Lam T12.",
+            },
+        ]
 
-            cays_str = ", ".join([f"{c['cay']} ({c['ty_le_pct']}%)" for c in cays]) if cays else "🍂 Phơi ải / Nghỉ đất (100%)"
-            
-            # Đánh giá nước tưới
-            if d["ma"] == "xuan":
-                nuoc_str = "💧 Đủ nước tự chảy (Ba Ra Đô Lương)"
-                khuyen_nghi = "Gieo mạ chống rét T1, trỗ rộ T4 né táp gió Lào, gặt T5."
-            elif d["ma"] == "hethu":
-                nuoc_str = "⚠️ Cần tưới đệm giữ mát T7"
-                khuyen_nghi = "Cấy cực nhanh, gặt trước 15/9 né lũ Kênh Vách Bắc."
-            else:
-                nuoc_str = "🌾 Không cần cấp nước"
-                khuyen_nghi = "Cày sâu phơi nỏ ruộng diệt mầm đạo ôn, xen canh màu."
+        st.dataframe(pd.DataFrame(rows_table), use_container_width=True, hide_index=True)
 
-            rows_table.append({
-                "Vụ Mùa": f"{d['icon']} {d['ten']}",
-                "Thời Gian": f"T{d['thang_bat_dau']} → T{d['thang_ket_thuc']} ({d['so_thang']} tháng)",
-                "Cây Trồng & Tỷ Lệ": cays_str,
-                "Rủi Ro Khí Hậu": f"{rr_val:.0f}% ({dg.get('muc', 'Nên trồng')})",
-                "Nguồn Nước Ba Ra": nuoc_str,
-                "Khuyến Nghị Nông Học": khuyen_nghi,
-            })
-
-        df_show = pd.DataFrame(rows_table)
-        st.dataframe(df_show, use_container_width=True, hide_index=True)
-
-    # ĐIỀU CHỈNH NHANH TỶ LỆ CÂY TRỒNG TỪNG ĐỢT (GỌN GÀNG THEO TỪNG CỘT)
+    # 3 CỘT ĐIỀU CHỈNH GIỐNG LÚA THUẦN CHO TỪNG VỤ
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:12.5px; font-weight:750; color:#0F172A; margin-bottom:6px;'>⚙️ Tùy Chỉnh Cơ Cấu Cây Trồng Từng Vụ (Nhấp để đổi giống & tỷ lệ %):</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:12.5px; font-weight:750; color:#0F172A; margin-bottom:6px;'>🌾 Lựa Chọn Cơ Cấu Giống Lúa Thuần Từng Vụ:</div>", unsafe_allow_html=True)
 
-    cols_dot = st.columns(len(cac_dot), gap="small")
-    for idx_d, (col, d) in enumerate(zip(cols_dot, cac_dot)):
-        with col, st.container(border=True):
-            st.markdown(
-                f'<div style="font-size:12px; font-weight:800; color:{d["mau"]}; border-bottom:1px solid #F1F5F9; padding-bottom:4px; margin-bottom:6px;">'
-                f'{d["icon"]} {d["ten"]} (T{d["thang_bat_dau"]}–T{d["thang_ket_thuc"]})'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-            khoa = _khoa_session(vung, nam, d["ma"])
-            curr_plan = st.session_state.get(khoa, [])
-            
-            opt_mode = ["Lúa thuần 100%", "Lúa + Lạc luân canh", "Phơi ải ruộng"]
-            idx_m = 0
-            if len(curr_plan) == 0:
-                idx_m = 2
-            elif len(curr_plan) >= 2:
-                idx_m = 1
+    col_x, col_ht, col_ai = st.columns(3, gap="small")
 
-            chon_opt = st.selectbox(
-                f"Kiểu canh tác ({d['ma']}):",
-                opt_mode,
-                index=idx_m,
-                key=f"quick_sel_mode_{d['ma']}_{nam}",
-                label_visibility="collapsed",
-            )
+    with col_x, st.container(border=True):
+        st.markdown(
+            """
+            <div style="font-size:12.5px; font-weight:800; color:#16A34A; border-bottom:1px solid #F1F5F9; padding-bottom:4px; margin-bottom:6px;">
+              🌾 Vụ Lúa Chiêm Xuân (100% Lúa)
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        g_xuan = st.selectbox(
+            "Giống lúa xuân:",
+            GIONG_LUA_XUAN,
+            index=0,
+            key=f"sel_giong_xuan_{nam}",
+            label_visibility="collapsed",
+        )
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; color:#334155; line-height:1.45;">
+              • <b>Giống đang chọn:</b> <b style="color:#16A34A;">{g_xuan.split('(')[0].strip()}</b><br>
+              • <b>Đặc điểm:</b> Sinh trưởng 125–135 ngày, gạo thơm ngon, chống chịu rét đầu vụ.<br>
+              • <b>Tỷ lệ diện tích:</b> <b>100%</b> toàn bộ cánh đồng Yên Thành.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            new_plan = []
-            if "Phơi ải" in chon_opt:
-                new_plan = []
-                st.caption("🍂 Nghỉ đất phơi nỏ diệt nấm bệnh.")
-            elif "luân canh" in chon_opt:
-                tl_lua = st.slider(f"Tỷ lệ Lúa % ({d['ma']}):", 30, 80, 70, step=10, key=f"sld_lua_{d['ma']}_{nam}")
-                tl_lac = 100 - tl_lua
-                new_plan = [{"cay": "Lúa", "ty_le_pct": tl_lua}, {"cay": "Lạc", "ty_le_pct": tl_lac}]
-                st.caption(f"🌾 Lúa: {tl_lua}% · 🥜 Lạc: {tl_lac}%")
-            else:
-                new_plan = [{"cay": "Lúa", "ty_le_pct": 100}]
-                st.caption("🌾 Chuyên canh lúa 100% diện tích.")
+    with col_ht, st.container(border=True):
+        st.markdown(
+            """
+            <div style="font-size:12.5px; font-weight:800; color:#D97706; border-bottom:1px solid #F1F5F9; padding-bottom:4px; margin-bottom:6px;">
+              ☀️ Vụ Lúa Hè Thu (100% Lúa)
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        g_ht = st.selectbox(
+            "Giống lúa hè thu:",
+            GIONG_LUA_HETHU,
+            index=0,
+            key=f"sel_giong_hethu_{nam}",
+            label_visibility="collapsed",
+        )
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; color:#334155; line-height:1.45;">
+              • <b>Giống đang chọn:</b> <b style="color:#D97706;">{g_ht.split('(')[0].strip()}</b><br>
+              • <b>Đặc điểm:</b> Thời gian sinh trưởng cực ngắn (85–95 ngày), né hoàn toàn lũ tiểu mãn.<br>
+              • <b>Tỷ lệ diện tích:</b> <b>100%</b> đồng loạt cấy sớm trước 10/6.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            if new_plan != curr_plan:
-                st.session_state[khoa] = new_plan
+    with col_ai, st.container(border=True):
+        st.markdown(
+            """
+            <div style="font-size:12.5px; font-weight:800; color:#0284C7; border-bottom:1px solid #F1F5F9; padding-bottom:4px; margin-bottom:6px;">
+              🚜 Vụ Đông: Cày Ải Phơi Ruộng
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        phuong_an_dong = st.selectbox(
+            "Phương án vụ đông:",
+            ["Cày lật đất phơi nỏ ải 100%", "Phơi ải 70% + Trồng Ngô ngọt 30%"],
+            index=0,
+            key=f"sel_phuong_an_dong_{nam}",
+            label_visibility="collapsed",
+        )
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; color:#334155; line-height:1.45;">
+              • <b>Quy trình:</b> <b style="color:#0284C7;">{phuong_an_dong}</b><br>
+              • <b>Mục tiêu cốt lõi:</b> Phơi khô nỏ ruộng để diệt triệt để nấm đạo ôn và sâu đục thân.<br>
+              • <b>Hiệu quả:</b> Hoàn nguyên độ phì cho vụ lúa xuân tiếp theo.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    # BIỂU ĐỒ GANTT LỊCH 12 THÁNG SỐ HÓA
+    # BIỂU ĐỒ GANTT LỊCH 12 THÁNG THUẦN LÚA
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     with st.container(border=True):
-        st.markdown('<div style="font-size:12.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">📊 Biểu Đồ Gantt Phân Bổ Mùa Vụ 12 Tháng Yên Thành</div>', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div style="font-size:12.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">
+              📊 Biểu Đồ Gantt Chu Kỳ 12 Tháng Cơ Cấu Thuần Lúa Yên Thành
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-        gantt_rows = []
-        for d in cac_dot:
-            cays = st.session_state.get(_khoa_session(vung, nam, d["ma"]), [])
-            if not cays:
-                gantt_rows.append({
-                    "Vụ": d["ten"],
-                    "Cây trồng": "🍂 Phơi Ải Đất",
-                    "Bắt đầu": d["thang_bat_dau"],
-                    "Thời lượng": d["so_thang"],
-                    "Tỷ lệ": 100,
-                    "Màu": "#94A3B8",
-                })
-            else:
-                for c in cays:
-                    gantt_rows.append({
-                        "Vụ": d["ten"],
-                        "Cây trồng": c["cay"],
-                        "Bắt đầu": d["thang_bat_dau"],
-                        "Thời lượng": d["so_thang"],
-                        "Tỷ lệ": c["ty_le_pct"],
-                        "Màu": "#16A34A" if c["cay"] == "Lúa" else ("#D97706" if c["cay"] == "Lạc" else "#0284C7"),
-                    })
+        gantt_rows = [
+            {"Vụ": "Vụ Lúa Chiêm Xuân", "Cây trồng": f"🌾 Lúa Xuân ({g_xuan.split('(')[0].strip()})", "Bắt đầu": 1, "Thời lượng": 5, "Màu": "#16A34A"},
+            {"Vụ": "Vụ Lúa Hè Thu", "Cây trồng": f"☀️ Lúa Hè Thu ({g_ht.split('(')[0].strip()})", "Bắt đầu": 6, "Thời lượng": 4, "Màu": "#D97706"},
+            {"Vụ": "Phơi Ải Ruộng Vụ Đông", "Cây trồng": "🚜 Cày Ải Phơi Nỏ Đất", "Bắt đầu": 10, "Thời lượng": 3, "Màu": "#0284C7"},
+        ]
 
         fig_gantt = go.Figure()
         for r in gantt_rows:
             fig_gantt.add_trace(go.Bar(
-                name=f"{r['Cây trồng']} ({r['Tỷ lệ']}%)",
+                name=r["Cây trồng"],
                 y=[r["Vụ"]],
                 x=[r["Thời lượng"]],
                 base=r["Bắt đầu"] - 1,
                 orientation="h",
                 marker=dict(color=r["Màu"], line=dict(color="#FFFFFF", width=2), cornerradius=5),
-                text=f"<b>{r['Cây trồng']}</b> ({r['Tỷ lệ']}%)",
+                text=f"<b>{r['Cây trồng']}</b> (100% diện tích)",
                 textposition="inside",
                 insidetextanchor="middle",
                 textfont=dict(color="#FFFFFF", family="Be Vietnam Pro", size=11, weight=700),
-                hovertemplate=f"<b>{r['Vụ']}</b>: {r['Cây trồng']} ({r['Tỷ lệ']}%)<br>Từ Tháng {r['Bắt đầu']} đến Tháng {r['Bắt đầu'] + r['Thời lượng'] - 1}<extra></extra>",
+                hovertemplate=f"<b>{r['Vụ']}</b>: {r['Cây trồng']}<br>Từ Tháng {r['Bắt đầu']} đến Tháng {r['Bắt đầu'] + r['Thời lượng'] - 1}<extra></extra>",
             ))
 
         fig_gantt.update_layout(
             barmode="stack",
-            height=160 + len(cac_dot) * 28,
+            height=180,
             margin=dict(l=10, r=10, t=10, b=20),
             plot_bgcolor="#FFFFFF",
             paper_bgcolor="#FFFFFF",
@@ -344,43 +347,38 @@ def _hien_tab_lap_ke_hoach(dl, vung, nam, tb_df, cac_dot, ke_hoach_nguoi_dung, d
 
 
 # =============================================================================
-# TAB 2: THÍ NGHIỆM SỨC KHỎE ĐẤT & SO SÁNH ĐỊNH LƯỢNG (SOIL HEALTH INDEX)
+# TAB 2: SỨC KHỎE ĐẤT & HOÀN NGUYÊN NHỜ CÀY PHƠI ẢI VỤ ĐÔNG
 # =============================================================================
 
-def _hien_tab_suc_khoe_dat(danh_gia_nam):
-    """Tab 2: Định lượng số hóa chỉ số sức khỏe đất (SHI) và so sánh khoa học."""
-    shi_val = danh_gia_nam.get("diem_suc_khoe_dat", 85)
-    nuoc_val = danh_gia_nam.get("tiet_kiem_nuoc_pct", 20)
-    co_dau = danh_gia_nam.get("co_cay_dau", False)
-    co_ai = danh_gia_nam.get("co_de_ai", False)
-
+def _hien_tab_dat_thuan_lua(danh_gia_nam):
+    """Tab 2: Đánh giá khoa học sức khỏe đất trong canh tác thuần lúa."""
     col_box1, col_box2 = st.columns([1, 1], gap="medium")
 
     with col_box1:
         with st.container(border=True):
             st.markdown(
                 """
-                <div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:8px;">
-                  🧪 Bảng Chỉ Số Sức Khỏe Đất Định Lượng (Soil Health Scorecard)
+                <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:8px;">
+                  🧪 Bảng Chỉ Tiêu Thổ Nhưỡng Ruộng Thuần Lúa Yên Thành
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-            data_shi = [
-                {"Chỉ Số Đất": "🍂 Carbon Hữu Cơ (SOC)", "Giá Trị Định Lượng": "+28% đến +35%" if co_dau else "Duy trì ổn định", "Đánh Giá Nông Học": "Tích lũy chất mùn hữu cơ từ rễ nốt sần"},
-                {"Chỉ Số Đất": "💧 Tiết Kiệm Nước Ba Ra", "Giá Trị Định Lượng": f"Giảm {nuoc_val}% nhu cầu", "Đánh Giá Nông Học": "Giảm áp lực cống lấy nước sông Lam"},
-                {"Chỉ Số Đất": "🦠 Cắt Mầm Đạo Ôn & Sâu", "Giá Trị Định Lượng": "Giảm 85–90%" if co_ai else "Cần theo dõi sát", "Đánh Giá Nông Học": "Nhờ cày sâu phơi nỏ đất diệt bào tử"},
-                {"Chỉ Số Đất": "🌱 Đạm Vi Sinh Hữu Cơ (N)", "Giá Trị Định Lượng": "+40–60 kg N/ha" if co_dau else "0 kg N", "Đánh Giá Nông Học": "Vi khuẩn Rhizobium cố định đạm khí trời"},
-                {"Chỉ Số Đất": "🛡️ Độ Ổn Định Kết Cấu Đất", "Giá Trị Định Lượng": f"{shi_val}/100 điểm", "Đánh Giá Nông Học": "Đất tơi xốp, hệ vi sinh vật hiếu khí mạnh"},
+            data_soil = [
+                {"Chỉ Tiêu": "🍂 Cày phơi ải vụ đông", "Định Lượng": "30–45 ngày phơi nỏ", "Ý Nghĩa Nông Học": "Cực kỳ quan trọng để cắt mầm nấm đạo ôn cổ bông"},
+                {"Chỉ Tiêu": "💧 Nước tưới Ba Ra Đô Lương", "Định Lượng": "Tự chảy 26.500 ha", "Ý Nghĩa Nông Học": "Cung cấp đủ nước ngọt phù sa sông Lam"},
+                {"Chỉ Tiêu": "🦠 Tỷ lệ diệt trừ sâu bệnh", "Định Lượng": "Giảm 85–90%", "Ý Nghĩa Nông Học": "Nhờ phơi ải đất kết hợp rải vôi bột khử chua"},
+                {"Chỉ Tiêu": "🌾 Năng suất cả năm", "Định Lượng": "122–128 tạ/ha/năm", "Ý Nghĩa Nông Học": "Tổng sản lượng 2 vụ lúa cao nhất Nghệ An"},
+                {"Chỉ Tiêu": "🧪 Độ pH đất lúa", "Định Lượng": "5.2 – 5.8", "Ý Nghĩa Nông Học": "Thổ nhưỡng phù sa cổ thích hợp lúa thuần"},
             ]
-            st.dataframe(pd.DataFrame(data_shi), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(data_soil), use_container_width=True, hide_index=True)
 
     with col_box2:
         with st.container(border=True):
             st.markdown(
                 """
-                <div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:8px;">
-                  ⚖️ So Sánh Định Lượng: Độc Canh Lúa vs Luân Canh Lúa – Màu
+                <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:8px;">
+                  🌾 3 Nguyên Tắc Vàng Giữ Đất Bền Vững Cho 2 Vụ Thuần Lúa
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -388,28 +386,27 @@ def _hien_tab_suc_khoe_dat(danh_gia_nam):
             st.markdown(
                 """
                 <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
-                  <div style="background:#FEF2F2; border:1px solid #FECACA; border-left:4px solid #DC2626; border-radius:8px; padding:9px 12px;">
-                    <b style="color:#DC2626;">❌ Nếu Độc Canh Lúa Thuần (2–3 vụ liên tục):</b><br>
-                    • Tiêu tốn <b>>12.500 m³ nước/ha</b> suốt chu kỳ.<br>
-                    • Đất bị dí nén tầng đế cày, yếm khí, rơm rạ không phân hủy sinh ngộ độc hữu cơ.<br>
-                    • Bào tử đạo ôn cổ bông và rầy nâu lưu cữu trong bùn ruộng qua các năm.
+                  <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; border-radius:8px; padding:8px 12px;">
+                    <b style="color:#16A34A;">1. Cày lật đất phơi ải sâu 18–22 cm:</b><br>
+                    Sau khi gặt lúa hè thu, khẩn trương cày lật đất phơi nỏ ải vụ đông để phá vỡ tầng đế cày, giải phóng khí độc yếm khí và diệt sạch bào tử nấm.
                   </div>
-                  <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; border-radius:8px; padding:9px 12px;">
-                    <b style="color:#16A34A;">✅ Khi Thực Hiện Luân Canh Lúa – Lạc – Phơi Ải:</b><br>
-                    • Tiết kiệm <b>~2.500–3.000 m³ nước/ha</b>, chia sẻ nước cho vùng cuối kênh.<br>
-                    • Cố định tự nhiên <b>40–60 kg N/ha</b> tương đương bón 2 bao urê sạch.<br>
-                    • Cắt đứt chu kỳ sinh thái của sâu bệnh, đất ruộng tơi xốp, năng suất vụ sau tăng +8–12%.
+                  <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-left:4px solid #0284C7; border-radius:8px; padding:8px 12px;">
+                    <b style="color:#0284C7;">2. Bón vôi và phân chuồng hoai mục đầu vụ:</b><br>
+                    Rải 20–25 kg vôi bột/sào vào tháng 12 trước khi đổ ải lấy nước sông Lam để khử chua và kích thích vi sinh vật có ích.
+                  </div>
+                  <div style="background:#FFFBEB; border:1px solid #FDE68A; border-left:4px solid #D97706; border-radius:8px; padding:8px 12px;">
+                    <b style="color:#D97706;">3. Rút nước phơi ruộng nứt chân chim:</b><br>
+                    Ở giai đoạn cuối đẻ nhánh (cuối T2 và giữa T7), rút cạn nước 5–7 ngày để rễ lúa ăn sâu, chống đổ ngã khi gặp mưa dông và gió Lào.
                   </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-    # KHUYẾN NGHỊ TỔNG KẾT
     st.markdown(
-        f"""
-        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-left:4px solid #0F766E; border-radius:8px; padding:10px 14px; margin-top:8px; font-size:12.5px; color:#1E293B;">
-          <b>🌾 Khuyến nghị chiến lược cho Nông nghiệp Yên Thành:</b> {danh_gia_nam['khuyen_nghi_tong']}
+        """
+        <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-left:4px solid #16A34A; border-radius:8px; padding:10px 14px; margin-top:8px; font-size:12px; color:#1E293B;">
+          <b>🌾 Kết luận Nông học Yên Thành:</b> Canh tác 2 vụ thuần lúa là thế mạnh truyền thống số 1 của vựa lúa Yên Thành. Chỉ cần tuân thủ nghiêm ngặt lịch cày ải phơi ruộng vụ đông và gặt trước 15/9 né lũ Kênh Vách Bắc, đất ruộng sẽ duy trì độ phì bền vững và năng suất luôn dẫn đầu toàn tỉnh.
         </div>
         """,
         unsafe_allow_html=True,
@@ -417,24 +414,23 @@ def _hien_tab_suc_khoe_dat(danh_gia_nam):
 
 
 # =============================================================================
-# TAB 3: ĐỐI CHIẾU KHÍ TƯỢNG & LƯỚI RỦI RO THIÊN TAI VIỄN THÁM NASA
+# TAB 3: LƯỚI KHÍ TƯỢNG & RỦI RO THIÊN TAI TỪNG GIAI ĐOẠN CÂY LÚA
 # =============================================================================
 
-def _hien_tab_doi_chieu_vi_tri_khi_hau(dl, vung, nam, cac_dot):
-    """Tab 3: Chuẩn hóa dữ liệu viễn thám khí hậu NASA 12 tháng và thiên tai đặc thù."""
+def _hien_tab_khi_tuong_lua(dl, vung, nam):
+    """Tab 3: Chuẩn hóa 12 tháng khí tượng viễn thám phục vụ cây lúa nước."""
     with st.container(border=True):
         st.markdown(
             """
             <div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:8px;">
-              🛰️ Lưới Rủi Ro Thiên Tai & Ngưỡng An Toàn Sinh Học 12 Tháng Tại Yên Thành
+              🛰️ Lưới Rủi Ro Khí Tượng NASA Chuẩn Hóa Cho 2 Vụ Thuần Lúa Yên Thành
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Bảng dữ liệu chuẩn hóa 12 tháng
         df_yt = dl[(dl.year == nam) & (dl.huyen == vung)].sort_values("month")
-        rows_khi_hau = []
+        rows = []
         for m in range(1, 13):
             sub_m = df_yt[df_yt.month == m]
             r = sub_m.iloc[0] if not sub_m.empty else pd.Series()
@@ -445,36 +441,36 @@ def _hien_tab_doi_chieu_vi_tri_khi_hau(dl, vung, nam, cac_dot):
             ndvi = float(r.get("ndvi", 0.65)) if pd.notna(r.get("ndvi")) else 0.65
 
             if m in [1, 2]:
-                gd = "Gieo mạ & cấy lúa xuân"
-                rr_txt = "❄️ Nguy cơ rét đậm hại mạ" if tmax < 20 else "🟢 Thuận lợi"
+                gd = "🌱 Gieo mạ & Cấy xuân"
+                rr = "❄️ Rét đậm hại mạ non" if tmax < 20 else "🟢 Thuận lợi đẻ nhánh"
             elif m in [3, 4]:
-                gd = "Làm đòng & trỗ bông xuân"
-                rr_txt = "🔥 Gió Lào T4 táp bông" if nong >= 5 else "🟢 Tối ưu quang hợp"
+                gd = "🌾 Làm đòng & Trỗ bông xuân"
+                rr = "🔥 Gió Lào T4 táp phấn hoa" if nong >= 5 else "🟢 Nắng ấm quang hợp tốt"
             elif m == 5:
-                gd = "Chín & gặt lúa xuân"
-                rr_txt = "🌾 Cần khô ruộng đưa máy gặt"
+                gd = "✨ Chín & Gặt lúa xuân"
+                rr = "🌾 Cần tháo cạn nước đưa máy gặt"
             elif m in [6, 7]:
-                gd = "Cấy & đẻ nhánh hè thu"
-                rr_txt = "🔥 Đỉnh nắng hạn gió Lào" if nong >= 7 else "🟡 Cần dâng nước đệm"
+                gd = "🌱 Cấy & Đẻ nhánh hè thu"
+                rr = "🔥 Đỉnh nắng hạn gió Lào Tây Nam" if nong >= 7 else "🟡 Cần dâng nước làm mát"
             elif m == 8:
-                gd = "Trỗ bông lúa hè thu"
-                rr_txt = "🌾 Trỗ hè thu cần nước mát"
+                gd = "🌾 Trỗ bông lúa hè thu"
+                rr = "🌾 Trỗ hè thu cần nước tưới đệm"
             elif m in [9, 10]:
-                gd = "Gặt hè thu & tránh lũ"
-                rr_txt = "🌊 MƯA BÃO LỚN KÊNH VÁCH BẮC" if mua >= 300 else "🟡 Mưa rải rác"
+                gd = "🌊 Gặt hè thu né lụt & Cày ải"
+                rr = "🌊 MƯA LŨ KÊNH VÁCH BẮC (>300mm)" if mua >= 300 else "🟡 Mưa dông rải rác"
             else:
-                gd = "Cày ải phơi nỏ & vụ đông"
-                rr_txt = "🚜 Đất khô nỏ diệt mầm nấm"
+                gd = "🚜 Phơi khô nỏ ruộng vụ đông"
+                rr = "🚜 Hanh khô lý tưởng diệt mầm nấm"
 
-            rows_khi_hau.append({
+            rows.append({
                 "Tháng": f"Tháng {m}",
-                "Giai Đoạn Nông Học": gd,
+                "Giai Đoạn Lúa Nước": gd,
                 "Tmax (°C)": f"{tmax:.1f}",
                 "Gió Lào ≥35°C": f"{nong} ngày",
                 "Mưa GPM (mm)": f"{mua:.0f}",
-                "Độ Ẩm SMAP": f"{sm*100:.0f}%",
+                "Độ Ẩm Ruộng (SMAP)": f"{sm*100:.0f}%",
                 "Sinh Khối NDVI": f"{ndvi:.2f}",
-                "Cảnh Báo Viễn Thám": rr_txt,
+                "Mệnh Lệnh Khuyến Cáo": rr,
             })
 
-        st.dataframe(pd.DataFrame(rows_khi_hau), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
