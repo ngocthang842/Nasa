@@ -83,8 +83,108 @@ def ve_cot_don(x_vals, y_vals, nam_hien_tai, mau_chinh, don_vi="", fmt="{:.0f}")
 
 def hien(ctx):
     dl, diem = ctx["dl"], ctx["diem"]
-    nam, thang, years = ctx["nam"], ctx.get("thang", 4), ctx["years"]
+    years = ctx["years"]
     vung = "Yên Thành"
+
+    # 0. BỘ CHỌN NGÀY CỤ THỂ ĐỒNG BỘ NĂM & THÁNG
+    key_date = "date_pick_so_sanh_main"
+    key_chuyen_ngay = "chuyen_ngay_so_sanh"
+
+    if key_chuyen_ngay in st.session_state and st.session_state[key_chuyen_ngay]:
+        st.session_state[key_date] = st.session_state.pop(key_chuyen_ngay)
+
+    df_daily = _tai_daily_power()
+    if not df_daily.empty:
+        min_date = df_daily["date_dt"].dt.date.min()
+        max_date = df_daily["date_dt"].dt.date.max()
+    else:
+        min_date = datetime.date(2018, 1, 1)
+        max_date = datetime.date(2026, 11, 15)
+
+    if key_date not in st.session_state or not isinstance(st.session_state[key_date], datetime.date):
+        st.session_state[key_date] = datetime.date(2026, 4, 15)
+
+    with st.container(border=True):
+        col_d_box, col_event_box = st.columns([3.8, 8.2], gap="small")
+
+        with col_d_box:
+            st.markdown(
+                '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '📆 Chọn Ngày Khảo Sát So Sánh (2018–2026):'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            ngay_chon = st.date_input(
+                "Ngày khảo sát:",
+                value=st.session_state[key_date],
+                min_value=min_date,
+                max_value=max_date,
+                key=f"widget_{key_date}",
+                format="DD/MM/YYYY",
+                label_visibility="collapsed",
+            )
+            if ngay_chon and ngay_chon != st.session_state[key_date]:
+                st.session_state[key_date] = ngay_chon
+                st.rerun()
+
+        with col_event_box:
+            st.markdown(
+                '<div style="font-size:11.5px; font-weight:750; color:#475569; margin-bottom:4px;">'
+                '⚡ Lối Tắt Mốc Nông Học & Khí Tượng Cực Đoan:'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            col_b1, col_b2, col_b3, col_b4 = st.columns(4, gap="small")
+            with col_b1:
+                if st.button("🌸 Trỗ xuân (15/04/2026)", key="btn_xuan_ss_main", use_container_width=True):
+                    st.session_state[key_chuyen_ngay] = datetime.date(2026, 4, 15)
+                    st.rerun()
+            with col_b2:
+                if st.button("🌾 Gặt hè thu (10/09/2026)", key="btn_hethu_ss_main", use_container_width=True):
+                    st.session_state[key_chuyen_ngay] = datetime.date(2026, 9, 10)
+                    st.rerun()
+            with col_b3:
+                if st.button("🔥 Hạn 2019 (22/06/2019)", key="btn_han_ss_main", use_container_width=True):
+                    st.session_state[key_chuyen_ngay] = datetime.date(2019, 6, 22)
+                    st.rerun()
+            with col_b4:
+                if st.button("🌊 Lũ 2020 (19/10/2020)", key="btn_lu_ss_main", use_container_width=True):
+                    st.session_state[key_chuyen_ngay] = datetime.date(2020, 10, 19)
+                    st.rerun()
+
+        cur_date = st.session_state[key_date]
+        nam = cur_date.year
+        thang = cur_date.month
+
+        # Trích xuất số liệu telemetry thực đo ngày
+        tele_str = ""
+        if not df_daily.empty:
+            r_day = df_daily[df_daily["date_dt"].dt.date == cur_date]
+            if not r_day.empty:
+                r0 = r_day.iloc[0]
+                tmax_d = float(r0.get("T2M_MAX", 0))
+                tmin_d = float(r0.get("T2M_MIN", 0))
+                mua_d = float(r0.get("PRECTOTCORR", 0)) if pd.notna(r0.get("PRECTOTCORR")) else 0.0
+                rh_d = float(r0.get("RH2M", 70)) if pd.notna(r0.get("RH2M")) else 70.0
+                rad_d = float(r0.get("ALLSKY_SFC_SW_DWN", 15)) if pd.notna(r0.get("ALLSKY_SFC_SW_DWN")) else 15.0
+                tele_str = (
+                    f'<span style="color:#0F172A; font-weight:700;">Tmax:</span> <b style="color:#DC2626;">{tmax_d:.1f}°C</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Tmin:</span> <b style="color:#0284C7;">{tmin_d:.1f}°C</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Mưa:</span> <b style="color:#0284C7;">{mua_d:.1f} mm</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Ẩm RH:</span> <b style="color:#16A34A;">{rh_d:.0f}%</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Bức xạ:</span> <b style="color:#D97706;">{rad_d:.1f} MJ/m²</b>'
+                )
+
+        tag_nam = "(Kế hoạch sản xuất)" if nam == 2026 else f"(Dữ liệu lịch sử {nam})"
+        tele_html = f'<div style="color:#334155; font-size:11.5px;">🛰️ <b>Telemetry Ngày {cur_date.strftime("%d/%m/%Y")}:</b> {tele_str}</div>' if tele_str else ''
+
+        st.markdown(
+            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px; gap:8px;">'
+            f'  <div>📌 Đang khảo sát: <b style="color:#0F766E; font-size:12.5px;">Ngày {cur_date.strftime("%d/%m/%Y")}</b> (Tháng {thang}/{nam}) {tag_nam}</div>'
+            f'  {tele_html}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     # 1. TIÊU ĐỀ & BANNER THÔNG TIN TRỰC QUAN
     tieu_de(vung, thang, nam, "Đối chiếu Đa năm · Vụ Lúa Yên Thành", len(years) < 2)
@@ -343,9 +443,10 @@ def hien(ctx):
         }
         with st.container(border=True):
             st.markdown(
-                '<div style="font-size:15px; font-weight:800; color:#0F172A; margin-bottom:6px;">'
-                '📈 Biểu đồ Chuỗi Thời Gian 12 Tháng Đối Chiếu Qua Các Năm:'
-                '</div>',
+                f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
+                f'  <div style="font-size:15px; font-weight:800; color:#0F172A;">📈 Biểu đồ Chuỗi Thời Gian 12 Tháng Chỉ Số Viễn Thám — Năm {nam}</div>'
+                f'  <div style="font-size:11.5px; color:#64748B;">Đường xu thế sinh thái cây lúa Yên Thành</div>'
+                f'</div>',
                 unsafe_allow_html=True,
             )
 
@@ -362,55 +463,141 @@ def hien(ctx):
             cot, don_vi_chon, col_chinh = CH[chon]
 
             f = go.Figure()
-            colors_year = {2026: "#0F172A", 2025: "#0284C7", 2024: "#94A3B8"}
-            styles_year = {2026: dict(width=3.5), 2025: dict(width=2.5), 2024: dict(width=1.8, dash="dot")}
-
-            for y in years:
-                q = dl[(dl.huyen == vung) & (dl.year == y)].sort_values("month")
-                if cot not in q.columns:
-                    continue
-                col_line = colors_year.get(y, "#64748B")
-                style_line = styles_year.get(y, dict(width=2))
-                y_series = q[cot] * (100 if cot == "sm_rootzone" else 1)
-                
-                f.add_scatter(
-                    x=[f"T{int(m)}" for m in q.month],
-                    y=y_series,
-                    name=f"Năm {y} {'(Khảo sát)' if y == nam else ''}".strip(),
-                    mode="lines+markers",
-                    line=dict(color=col_line, **style_line),
-                    marker=dict(size=8 if y == nam else 5),
-                    text=[f"{v:.1f} {don_vi_chon}".strip() for v in y_series],
-                    hoverinfo="name+x+text",
-                )
 
             # Vùng highlight tháng then chốt vụ mùa
             f.add_vrect(x0=2.5, x1=4.5, fillcolor="#FEF3C7", opacity=0.15, line_width=0, annotation_text="Trỗ bông xuân", annotation_position="top left", annotation_font_size=10)
             f.add_vrect(x0=7.5, x1=8.5, fillcolor="#FEE2E2", opacity=0.15, line_width=0, annotation_text="Lũ tiểu mãn", annotation_position="top left", annotation_font_size=10)
+
+            # CHỈ VẼ ĐƯỜNG DỮ LIỆU CỦA NĂM ĐÃ CHỌN (Theo yêu cầu người dùng)
+            q = dl[(dl.huyen == vung) & (dl.year == nam)].sort_values("month")
+            if not q.empty and cot in q.columns:
+                y_series = q[cot] * (100 if cot == "sm_rootzone" else 1)
+                tag_nam = " (Kế hoạch)" if nam == 2026 else f" (Lịch sử {nam})"
+                f.add_scatter(
+                    x=[f"T{int(m)}" for m in q.month],
+                    y=y_series,
+                    name=f"🌟 {chon} Năm {nam}{tag_nam}",
+                    mode="lines+markers",
+                    line=dict(shape="spline", smoothing=1.2, width=3.8, color=col_chinh),
+                    marker=dict(size=9, color=col_chinh),
+                    text=[f"{v:.1f} {don_vi_chon}".strip() for v in y_series],
+                    hoverinfo="name+x+text",
+                )
+
+            # Đánh dấu tháng hiện tại đang chọn
+            x_cur = f"T{int(thang)}"
+            f.add_shape(
+                type="line",
+                x0=x_cur,
+                x1=x_cur,
+                y0=0,
+                y1=1,
+                yref="paper",
+                line=dict(color="#0F172A", width=1.8, dash="dot"),
+            )
+            f.add_annotation(
+                x=x_cur,
+                y=1.02,
+                yref="paper",
+                text=f"T{int(thang)} (Đang xem)",
+                showarrow=False,
+                xanchor="center",
+                yanchor="bottom",
+                font=dict(size=11, color="#0F172A", weight="bold"),
+                bgcolor="rgba(255, 255, 255, 0.9)",
+            )
 
             f.update_layout(
                 height=320,
                 margin=dict(l=8, r=8, t=18, b=8),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
+                dragmode=False,
                 legend=dict(orientation="h", y=1.14, x=0),
-                xaxis=dict(gridcolor="#F1F5F9", showgrid=True),
-                yaxis=dict(gridcolor="#F1F5F9", showgrid=True, title=dict(text=don_vi_chon, font=dict(size=11))),
+                xaxis=dict(gridcolor="#F1F5F9", showgrid=True, fixedrange=True),
+                yaxis=dict(gridcolor="#F1F5F9", showgrid=True, title=dict(text=don_vi_chon, font=dict(size=11)), fixedrange=True),
             )
             ve(f, che_do="tuong_tac")
 
-        if len(diem):
-            with st.container(border=True):
-                st.markdown(
-                    f'<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:6px;">🌾 Mức Khuyến Nghị Cây Trồng Tại Tháng {thang} Qua Các Năm (Yên Thành)</div>',
-                    unsafe_allow_html=True,
-                )
-                q = diem[(diem.huyen == vung) & (diem.month == thang)].pivot(index="cay", columns="year", values="muc")
-                q.index.name = "Cây trồng"
-                try:
-                    st.dataframe(q, width="stretch")
-                except TypeError:
-                    st.dataframe(q, use_container_width=True)
+        # BẢNG MA TRẬN 100% TẬP TRUNG VÀO CÂY LÚA YÊN THÀNH
+        with st.container(border=True):
+            st.markdown(
+                f'<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">'
+                f'  <div style="font-size:13.5px; font-weight:800; color:#0F172A;">🌾 Ma Trận Giám Sát Nông Học & Khuyến Nghị Cây Lúa Tại Tháng {thang} Qua Các Năm (2018–2026)</div>'
+                f'  <div style="font-size:11px; font-weight:750; color:#16A34A; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:999px; padding:2px 10px;">100% Thuần Lúa Nước Yên Thành</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+            GIAI_DOAN_LUA = {
+                1: "Gieo mạ & Cấy lúa xuân",
+                2: "Đẻ nhánh rộ lúa xuân",
+                3: "Làm đòng & Ôm bòng",
+                4: "Trỗ bông rộ lúa xuân",
+                5: "Chín vàng & Thu hoạch xuân",
+                6: "Gieo cấy lúa hè thu né lũ",
+                7: "Đẻ nhánh hè thu chống hạn",
+                8: "Làm đòng & Trỗ hè thu",
+                9: "Gặt chạy lũ Kênh Vách Bắc",
+                10: "Cày lật sâu 20cm phơi ải",
+                11: "Phơi nỏ ruộng diệt mầm bệnh",
+                12: "Lấy nước sông Lam đổ ải",
+            }
+
+            def _get_kn_lua(m, n35, sm):
+                if m in (1, 2, 3):
+                    return "🟢 Nên gieo cấy & dưỡng mạ"
+                elif m == 4:
+                    return "🟡 Cân nhắc (Tưới mát chống gió Lào)" if n35 >= 3 else "🟢 Nên gieo cấy (Trỗ thuận lợi)"
+                elif m == 5:
+                    return "🟢 Thu hoạch rộ & cày vùi rơm"
+                elif m in (6, 7):
+                    return "🔴 Cực ngắn ngày né lũ"
+                elif m in (8, 9):
+                    return "🟡 Gặt trước 15/9 né ngập"
+                else:
+                    return "🚜 Cày phơi ải nỏ đất 100%"
+
+            metric_names = [
+                "🌾 Khuyến Nghị Mùa Vụ Lúa",
+                "🌿 Giai Đoạn Sinh Thái Lúa",
+                "🌱 Sinh Khối Tán Lúa (NDVI)",
+                "💧 Độ Ẩm Đất Ruộng (SMAP %)",
+                "🌡️ Nhiệt Độ Tmax (°C)",
+                "🔥 Ngày Gió Lào ≥35°C (ngày)",
+                "🌧️ Lượng Mưa Tích Lũy (mm)",
+                "⚖️ Cán Cân Ẩm Ruộng (mm)",
+            ]
+            data_dict = {m: {} for m in metric_names}
+
+            for y in years:
+                sub = dl[(dl.huyen == vung) & (dl.year == y) & (dl.month == thang)]
+                col_key = f"Năm {y} {'(Đang xem)' if y == nam else ''}".strip()
+                if not sub.empty:
+                    r = sub.iloc[0]
+                    nong35_v = int(r.get("nong35", 0))
+                    sm_v = float(r.get("sm_rootzone", 0.3)) * 100
+                    tmax_v = float(r.get("tmax", 30.0))
+                    mua_v = float(r.get("mua_mm", 0.0))
+                    ndvi_v = float(r.get("ndvi", 0.65))
+                    nuoc_v = float(r.get("nuoc_con_lai_mm", 0.0))
+
+                    data_dict["🌾 Khuyến Nghị Mùa Vụ Lúa"][col_key] = _get_kn_lua(thang, nong35_v, sm_v)
+                    data_dict["🌿 Giai Đoạn Sinh Thái Lúa"][col_key] = GIAI_DOAN_LUA.get(thang, "Thuần lúa nước")
+                    data_dict["🌱 Sinh Khối Tán Lúa (NDVI)"][col_key] = f"{ndvi_v:.2f}"
+                    data_dict["💧 Độ Ẩm Đất Ruộng (SMAP %)"][col_key] = f"{sm_v:.1f}%"
+                    data_dict["🌡️ Nhiệt Độ Tmax (°C)"][col_key] = f"{tmax_v:.1f}°C"
+                    data_dict["🔥 Ngày Gió Lào ≥35°C (ngày)"][col_key] = f"{nong35_v} ngày"
+                    data_dict["🌧️ Lượng Mưa Tích Lũy (mm)"][col_key] = f"{mua_v:.0f} mm"
+                    data_dict["⚖️ Cán Cân Ẩm Ruộng (mm)"][col_key] = f"{nuoc_v:.0f} mm"
+
+            df_matrix = pd.DataFrame(data_dict).T
+            df_matrix.index.name = "Chỉ số Nông học Cây Lúa"
+            try:
+                st.dataframe(df_matrix, width="stretch")
+            except TypeError:
+                st.dataframe(df_matrix, use_container_width=True)
+
 
     # -------------------------------------------------------------------------
     # TAB 3: ĐỐI CHIẾU CÙNG NGÀY QUA CÁC NĂM (DAY-OF-YEAR COMPARISON 2018–2026)
