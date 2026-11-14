@@ -7,6 +7,8 @@ Tính năng mới:
 - Hàng 3: Bảng Ma trận Số liệu Viễn thám 12 Tháng đối chiếu Đa năm (2024–2026)
 - Hàng 4: Bản đồ Viễn thám Không gian & Telemetry 4 Cụm Xã Thâm Canh (On-Demand)
 """
+import calendar
+import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -26,32 +28,81 @@ ICON_THANG = {
 
 
 # =============================================================================
-# 0. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT VIỄN THÁM (NĂM & THÁNG TƯƠNG TÁC)
+# 0. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT VIỄN THÁM (NĂM, THÁNG & NGÀY TƯƠNG TÁC)
 # =============================================================================
 
+@st.cache_data(show_spinner=False)
+def _tai_daily_power():
+    """Tải chuỗi dữ liệu thời tiết & viễn thám từng ngày huyện Yên Thành (2018–2026)."""
+    p = "data/raw/power/power_Yen_Thanh.csv"
+    try:
+        df = pd.read_csv(p)
+        df["date_dt"] = pd.to_datetime(df["date"])
+        df = df.dropna(subset=["T2M_MAX"])
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
 def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
-    """Thanh điều khiển chọn Năm và Tháng khảo sát viễn thám tương tác.
-    Cho phép nông dân/cán bộ khuyến nông xem lại dữ liệu lịch sử các năm cũ (2024, 2025)
-    hoặc năm kế hoạch (2026), và tua nhanh qua 12 tháng sinh trưởng của cây lúa."""
+    """Thanh điều khiển tương tác chuẩn AgTech:
+    - Chọn Năm (2018–2026)
+    - Chọn Tháng (T1–T12)
+    - Chọn Ngày cụ thể (DD/MM/YYYY) đồng bộ 2 chiều và hiển thị telemetry tức thời."""
     nam_mac_dinh = ctx.get("nam", 2026)
     thang_mac_dinh = ctx.get("thang", 4)
     years = ctx.get("years", [2024, 2025, 2026])
 
     key_nam = f"filter_nam_{cot_id}"
     key_thang = f"filter_thang_{cot_id}"
+    key_date = f"filter_date_{cot_id}"
 
     if key_nam not in st.session_state:
         st.session_state[key_nam] = nam_mac_dinh
     if key_thang not in st.session_state:
         st.session_state[key_thang] = thang_mac_dinh
 
+    cur_nam = int(st.session_state[key_nam])
+    cur_thang = int(st.session_state[key_thang])
+
+    df_daily = _tai_daily_power()
+    if not df_daily.empty:
+        min_date = df_daily["date_dt"].dt.date.min()
+        max_date = df_daily["date_dt"].dt.date.max()
+    else:
+        min_date = datetime.date(2018, 1, 1)
+        max_date = datetime.date(2026, 11, 15)
+
+    # Đồng bộ ngày trước khi render widget (tránh lỗi StreamlitWidgetAlreadyInstantiatedError)
+    if key_date not in st.session_state or not isinstance(st.session_state[key_date], datetime.date):
+        max_d_in_m = calendar.monthrange(cur_nam, cur_thang)[1]
+        init_d = min(15, max_d_in_m)
+        init_date = datetime.date(cur_nam, cur_thang, init_d)
+        if init_date < min_date:
+            init_date = min_date
+        elif init_date > max_date:
+            init_date = max_date
+        st.session_state[key_date] = init_date
+    else:
+        # Nếu năm hoặc tháng đã thay đổi qua selectbox/pills, cập nhật lại ngày
+        d_val = st.session_state[key_date]
+        if d_val.year != cur_nam or d_val.month != cur_thang:
+            max_d_in_m = calendar.monthrange(cur_nam, cur_thang)[1]
+            clamped_day = min(d_val.day, max_d_in_m)
+            cand_date = datetime.date(cur_nam, cur_thang, clamped_day)
+            if cand_date < min_date:
+                cand_date = min_date
+            elif cand_date > max_date:
+                cand_date = max_date
+            st.session_state[key_date] = cand_date
+
     with st.container(border=True):
-        col_y_box, col_m_box = st.columns([3.8, 8.2], gap="small")
+        col_y_box, col_m_box, col_d_box = st.columns([2.5, 5.7, 3.8], gap="small")
 
         with col_y_box:
             st.markdown(
                 '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
-                '📅 1. Năm Viễn Thám (Gõ số để tìm nhanh):'
+                '📅 1. Năm Viễn Thám:'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -94,11 +145,35 @@ def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
                 label_visibility="collapsed",
                 key=f"ctrl_thang_{cot_id}",
             )
-            if thang_chon:
+            if thang_chon and thang_chon != st.session_state[key_thang]:
                 st.session_state[key_thang] = int(thang_chon)
+                st.rerun()
+
+        with col_d_box:
+            st.markdown(
+                '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '📆 3. Chọn Ngày Cụ Thể (2018–2026):'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            ngay_chon = st.date_input(
+                "Ngày khảo sát:",
+                value=st.session_state[key_date],
+                min_value=min_date,
+                max_value=max_date,
+                key=f"widget_{key_date}",
+                format="DD/MM/YYYY",
+                label_visibility="collapsed",
+            )
+            if ngay_chon and (ngay_chon.year != cur_nam or ngay_chon.month != cur_thang or ngay_chon != st.session_state[key_date]):
+                st.session_state[key_date] = ngay_chon
+                st.session_state[key_nam] = ngay_chon.year
+                st.session_state[key_thang] = ngay_chon.month
+                st.rerun()
 
         cur_nam = int(st.session_state[key_nam])
         cur_thang = int(st.session_state[key_thang])
+        cur_date = st.session_state[key_date]
 
         # Phân loại vụ mùa
         if cur_thang <= 5:
@@ -108,11 +183,32 @@ def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
         else:
             vu_str = "🚜 Vụ Đông / Cày phơi ải đất"
 
-        tag_nam = "(Kế hoạch sản xuất)" if cur_nam == 2026 else f"(Dữ liệu lịch sử viễn thám {cur_nam})"
+        # Trích xuất số liệu telemetry thực đo ngày
+        tele_str = ""
+        if not df_daily.empty:
+            r_day = df_daily[df_daily["date_dt"].dt.date == cur_date]
+            if not r_day.empty:
+                r0 = r_day.iloc[0]
+                tmax_d = float(r0.get("T2M_MAX", 0))
+                tmin_d = float(r0.get("T2M_MIN", 0))
+                mua_d = float(r0.get("PRECTOTCORR", 0)) if pd.notna(r0.get("PRECTOTCORR")) else 0.0
+                rh_d = float(r0.get("RH2M", 70)) if pd.notna(r0.get("RH2M")) else 70.0
+                rad_d = float(r0.get("ALLSKY_SFC_SW_DWN", 15)) if pd.notna(r0.get("ALLSKY_SFC_SW_DWN")) else 15.0
+                tele_str = (
+                    f'<span style="color:#0F172A; font-weight:700;">Tmax:</span> <b style="color:#DC2626;">{tmax_d:.1f}°C</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Tmin:</span> <b style="color:#0284C7;">{tmin_d:.1f}°C</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Mưa:</span> <b style="color:#0284C7;">{mua_d:.1f} mm</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Ẩm RH:</span> <b style="color:#16A34A;">{rh_d:.0f}%</b> · '
+                    f'<span style="color:#0F172A; font-weight:700;">Bức xạ:</span> <b style="color:#D97706;">{rad_d:.1f} MJ/m²</b>'
+                )
+
+        tag_nam = "(Kế hoạch sản xuất)" if cur_nam == 2026 else f"(Dữ liệu lịch sử {cur_nam})"
+        tele_html = f'<div style="color:#334155; font-size:11.5px;">🛰️ <b>Telemetry Ngày {cur_date.strftime("%d/%m/%Y")}:</b> {tele_str}</div>' if tele_str else ''
+
         st.markdown(
-            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px;">'
-            f'  <div>📌 Đang khảo sát: <b style="color:#0F766E; font-size:12.5px;">Tháng {cur_thang}/{cur_nam}</b> {tag_nam} · <b style="color:#0F172A;">{vu_str}</b></div>'
-            f'  <div style="color:#64748B;">Vựa lúa Yên Thành · Kho lưu trữ NASA MODIS, SMAP, GPM 9 năm (2018–2026)</div>'
+            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px; gap:8px;">'
+            f'  <div>📌 Đang khảo sát: <b style="color:#0F766E; font-size:12.5px;">Ngày {cur_date.strftime("%d/%m/%Y")}</b> (Tháng {cur_thang}/{cur_nam}) {tag_nam} · <b style="color:#0F172A;">{vu_str}</b></div>'
+            f'  {tele_html}'
             f'</div>',
             unsafe_allow_html=True,
         )

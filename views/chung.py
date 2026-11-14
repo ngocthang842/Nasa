@@ -431,16 +431,8 @@ def ve(fig, che_do="co_dinh", **kw):
 
 
 def tieu_de(vung, thang, nam, phu, it_nam):
-    dia = E.VUNG.get(vung, "")
-    if it_nam:
-        dia = (dia + " · mới 1 năm").strip(" ·")
-    thoi_gian_txt = f"{vung} · Niên Vụ {nam}" if thang is None else f"{vung} · Tháng {thang}/{nam}"
-    st.markdown(
-        f'<div class="hero"><div><p class="eyebrow">{phu}</p>'
-        f'<p class="ht">{thoi_gian_txt}</p></div>'
-        f'<p class="terrain">{dia}</p></div>',
-        unsafe_allow_html=True,
-    )
+    """Đã loại bỏ banner hero trùng lặp theo yêu cầu người dùng, giữ chữ ký hàm để tương thích an toàn toàn hệ thống."""
+    return
 
 
 def spark(v, i, mau):

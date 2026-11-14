@@ -8,6 +8,8 @@ Kiến trúc Trung tâm Tác nghiệp Viễn thám & Điều hành Nông nghiệ
 - Tầng 4: Trung tâm Tác nghiệp Cân đối (Bản đồ số hóa 4 cụm xã : Cockpit Radar Telemetry & 3 Mệnh Lệnh Nông Dân).
 - Tầng 5: Analytics Lab (3 Biểu đồ chuỗi đa năm đồng bộ, bo góc hiện đại).
 """
+import calendar
+import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -178,6 +180,19 @@ def ve_dong_ho_rui_ro(w, muc, mau):
     return fig
 
 
+@st.cache_data(show_spinner=False)
+def _tai_daily_power():
+    """Tải chuỗi dữ liệu thời tiết & viễn thám từng ngày huyện Yên Thành (2018–2026)."""
+    p = "data/raw/power/power_Yen_Thanh.csv"
+    try:
+        df = pd.read_csv(p)
+        df["date_dt"] = pd.to_datetime(df["date"])
+        df = df.dropna(subset=["T2M_MAX"])
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
 def hien(ctx):
     dl, diem, nam_df = ctx["dl"], ctx["diem"], ctx["nam_df"]
     nam, years = ctx["nam"], ctx["years"]
@@ -219,17 +234,17 @@ def hien(ctx):
         st.markdown("<hr style='margin:10px 0 12px 0; border-color:#F1F5F9;'>", unsafe_allow_html=True)
 
         # =====================================================================
-        # TẦNG 1: BỘ CHỌN MÙA VỤ CHUẨN XỨ NGHỆ & CHU KỲ 12 THÁNG
+        # TẦNG 1: BỘ CHỌN MÙA VỤ CHUẨN XỨ NGHỆ, 12 THÁNG & CHỌN NGÀY CỤ THỂ
         # =====================================================================
-        col_mode_lbl, col_mode_ctrl = st.columns([7.0, 3.0], gap="small")
+        col_mode_lbl, col_mode_ctrl = st.columns([5.5, 4.5], gap="small")
         with col_mode_ctrl:
             che_do_xem = st.segmented_control(
                 "Chế độ khảo sát:",
-                options=["🌾 3 Vụ Mùa Chuẩn", "📅 Theo 12 Tháng"],
+                options=["🌾 3 Vụ Mùa Chuẩn", "📅 Theo 12 Tháng", "📆 Theo Ngày Cụ Thể"],
                 default="🌾 3 Vụ Mùa Chuẩn",
                 key=f"seg_che_do_khao_sat_{nam}",
                 label_visibility="collapsed",
-            ) if hasattr(st, "segmented_control") else st.radio("Chế độ khảo sát:", ["🌾 3 Vụ Mùa Chuẩn", "📅 Theo 12 Tháng"], horizontal=True, key=f"rad_che_do_{nam}", label_visibility="collapsed")
+            ) if hasattr(st, "segmented_control") else st.radio("Chế độ khảo sát:", ["🌾 3 Vụ Mùa Chuẩn", "📅 Theo 12 Tháng", "📆 Theo Ngày Cụ Thể"], horizontal=True, key=f"rad_che_do_{nam}", label_visibility="collapsed")
 
         # ---------------------------------------------------------------------
         # CHẾ ĐỘ 1: THEO 3 VỤ MÙA CHUẨN XỨ NGHỆ (YÊN THÀNH STANDARD)
@@ -296,7 +311,7 @@ def hien(ctx):
         # ---------------------------------------------------------------------
         # CHẾ ĐỘ 2: THEO 12 THÁNG CHI TIẾT
         # ---------------------------------------------------------------------
-        else:
+        elif che_do_xem == "📅 Theo 12 Tháng":
             thang_khoi_tao = ctx.get("thang", 4)
             if thang_khoi_tao not in co_thang:
                 thang_khoi_tao = 4 if 4 in co_thang else co_thang[0]
@@ -317,6 +332,91 @@ def hien(ctx):
             st.markdown(
                 f'<div style="font-size:11.5px; color:#475569; margin-top:4px;">'
                 f'📌 Đang chọn <b>Tháng {thang}</b> · <b>{vu_ten}</b> — Giai đoạn sinh thái: <b style="color:#0F172A;">{gd_ten}</b>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # ---------------------------------------------------------------------
+        # CHẾ ĐỘ 3: THEO NGÀY CỤ THỂ (DAILY LOOKUP & TELEMETRY)
+        # ---------------------------------------------------------------------
+        else:
+            df_daily = _tai_daily_power()
+            if not df_daily.empty:
+                min_date = df_daily["date_dt"].dt.date.min()
+                max_date = df_daily["date_dt"].dt.date.max()
+            else:
+                min_date = datetime.date(2018, 1, 1)
+                max_date = datetime.date(2026, 11, 15)
+
+            key_d_tq = f"date_pick_tongquan_{nam}"
+            cur_d_init = datetime.date(nam if nam <= 2026 else 2026, 4, 15)
+            if cur_d_init > max_date:
+                cur_d_init = max_date
+            if cur_d_init < min_date:
+                cur_d_init = min_date
+
+            if key_d_tq not in st.session_state or not isinstance(st.session_state[key_d_tq], datetime.date):
+                st.session_state[key_d_tq] = cur_d_init
+
+            col_pick, col_fast = st.columns([4.2, 7.8], gap="small")
+            with col_pick:
+                st.markdown('<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">📆 Chọn ngày giám sát viễn thám:</div>', unsafe_allow_html=True)
+                ngay_chon = st.date_input(
+                    "Ngày giám sát:",
+                    value=st.session_state[key_d_tq],
+                    min_value=min_date,
+                    max_value=max_date,
+                    key=f"widget_{key_d_tq}",
+                    format="DD/MM/YYYY",
+                    label_visibility="collapsed",
+                )
+                if ngay_chon:
+                    st.session_state[key_d_tq] = ngay_chon
+
+            with col_fast:
+                st.markdown('<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">⚡ Lối tắt sự kiện nông học / thời tiết:</div>', unsafe_allow_html=True)
+                cf1, cf2, cf3 = st.columns(3, gap="small")
+                with cf1:
+                    if st.button("🌸 Trỗ xuân (15/04)", key="btn_tq_xuan", use_container_width=True):
+                        st.session_state[key_d_tq] = datetime.date(nam if nam <= 2026 else 2026, 4, 15)
+                        st.rerun()
+                with cf2:
+                    if st.button("🔥 Gió Lào (22/06)", key="btn_tq_han", use_container_width=True):
+                        st.session_state[key_d_tq] = datetime.date(nam if nam <= 2026 else 2026, 6, 22)
+                        st.rerun()
+                with cf3:
+                    if st.button("🌊 Mưa lũ (19/10)", key="btn_tq_lu", use_container_width=True):
+                        st.session_state[key_d_tq] = datetime.date(nam if nam <= 2026 else 2026, 10, 19)
+                        st.rerun()
+
+            sel_date_tq = st.session_state[key_d_tq]
+            thang = sel_date_tq.month
+
+            # Trích xuất số liệu telemetry thực đo ngày
+            tele_str = ""
+            if not df_daily.empty:
+                r_day = df_daily[df_daily["date_dt"].dt.date == sel_date_tq]
+                if not r_day.empty:
+                    r0 = r_day.iloc[0]
+                    tmax_d = float(r0.get("T2M_MAX", 0))
+                    tmin_d = float(r0.get("T2M_MIN", 0))
+                    mua_d = float(r0.get("PRECTOTCORR", 0)) if pd.notna(r0.get("PRECTOTCORR")) else 0.0
+                    rh_d = float(r0.get("RH2M", 70)) if pd.notna(r0.get("RH2M")) else 70.0
+                    rad_d = float(r0.get("ALLSKY_SFC_SW_DWN", 15)) if pd.notna(r0.get("ALLSKY_SFC_SW_DWN")) else 15.0
+                    tele_str = (
+                        f'Tmax: <b style="color:#DC2626;">{tmax_d:.1f}°C</b> · '
+                        f'Tmin: <b style="color:#0284C7;">{tmin_d:.1f}°C</b> · '
+                        f'Mưa: <b style="color:#0284C7;">{mua_d:.1f} mm</b> · '
+                        f'Ẩm RH: <b style="color:#16A34A;">{rh_d:.0f}%</b> · '
+                        f'Bức xạ: <b style="color:#D97706;">{rad_d:.1f} MJ/m²</b>'
+                    )
+
+            vu_ten = "Vụ Chiêm Xuân (Vụ chính)" if thang <= 5 else ("Vụ Hè Thu (Chống hạn & gặt chạy lũ)" if thang <= 9 else "Vụ Đông / Cày phơi ải đất")
+            gd_ten = TEN_GIAI_DOAN.get(thang, "")
+            st.markdown(
+                f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px; gap:8px;">'
+                f'  <div>📌 Đang giám sát: <b style="color:#0F766E; font-size:12.5px;">Ngày {sel_date_tq.strftime("%d/%m/%Y")}</b> · <b>{vu_ten}</b> — Giai đoạn: <b>{gd_ten}</b></div>'
+                f'  <div style="color:#334155;">{"🛰️ Telemetry Ngày: " + tele_str if tele_str else ""}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )

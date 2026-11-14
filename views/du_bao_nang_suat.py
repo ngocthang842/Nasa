@@ -4,6 +4,8 @@ Tích hợp phương pháp luận chuẩn xác từ Báo cáo Đề tài:
 2. Mô hình Hồi quy tuyến tính đa biến Dự báo Năng suất Lúa Năm 2027 (Y_2027)
 Chuỗi dữ liệu viễn thám NASA MODIS, SMAP L-band, GPM IMERG, NASA POWER (2018–2027).
 """
+import calendar
+import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -56,24 +58,71 @@ def hien(ctx):
 # TAB 1: QUYẾT ĐỊNH THỜI VỤ GIEO CẤY THEO ĐIỂM THÍCH NGHI (S)
 # =============================================================================
 
+@st.cache_data(show_spinner=False)
+def _tai_daily_power():
+    """Tải chuỗi dữ liệu thời tiết & viễn thám từng ngày huyện Yên Thành (2018–2026)."""
+    p = "data/raw/power/power_Yen_Thanh.csv"
+    try:
+        df = pd.read_csv(p)
+        df["date_dt"] = pd.to_datetime(df["date"])
+        df = df.dropna(subset=["T2M_MAX"])
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
 def _hien_tab_thoi_vu(dl, vung, nam_mac_dinh, thang_mac_dinh, years):
     """Giao diện tính Điểm Thích Nghi Canh Tác S và Ra Quyết Định Gieo Cấy."""
     key_nam = "filter_nam_thoi_vu"
     key_thang = "filter_thang_thoi_vu"
+    key_date = "filter_date_thoi_vu"
 
     if key_nam not in st.session_state:
         st.session_state[key_nam] = nam_mac_dinh
     if key_thang not in st.session_state:
         st.session_state[key_thang] = thang_mac_dinh
 
+    cur_nam = int(st.session_state[key_nam])
+    cur_thang = int(st.session_state[key_thang])
+
+    df_daily = _tai_daily_power()
+    if not df_daily.empty:
+        min_date = df_daily["date_dt"].dt.date.min()
+        max_date = df_daily["date_dt"].dt.date.max()
+    else:
+        min_date = datetime.date(2018, 1, 1)
+        max_date = datetime.date(2026, 11, 15)
+
+    # Đồng bộ ngày trước khi render widget
+    if key_date not in st.session_state or not isinstance(st.session_state[key_date], datetime.date):
+        max_d_in_m = calendar.monthrange(cur_nam, cur_thang)[1]
+        init_d = min(15, max_d_in_m)
+        init_date = datetime.date(cur_nam, cur_thang, init_d)
+        if init_date < min_date:
+            init_date = min_date
+        elif init_date > max_date:
+            init_date = max_date
+        st.session_state[key_date] = init_date
+    else:
+        d_val = st.session_state[key_date]
+        if d_val.year != cur_nam or d_val.month != cur_thang:
+            max_d_in_m = calendar.monthrange(cur_nam, cur_thang)[1]
+            clamped_day = min(d_val.day, max_d_in_m)
+            cand_date = datetime.date(cur_nam, cur_thang, clamped_day)
+            if cand_date < min_date:
+                cand_date = min_date
+            elif cand_date > max_date:
+                cand_date = max_date
+            st.session_state[key_date] = cand_date
+
     # 1. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT
     with st.container(border=True):
-        col_y_box, col_m_box = st.columns([3.8, 8.2], gap="small")
+        col_y_box, col_m_box, col_d_box = st.columns([2.5, 5.7, 3.8], gap="small")
 
         with col_y_box:
             st.markdown(
                 '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
-                '📅 1. Năm Khảo Sát (Gõ số để tìm nhanh):'
+                '📅 1. Năm Khảo Sát:'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -104,7 +153,7 @@ def _hien_tab_thoi_vu(dl, vung, nam_mac_dinh, thang_mac_dinh, years):
         with col_m_box:
             st.markdown(
                 '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
-                '🌿 2. Tháng Canh Tác Cần Đánh Giá Điểm Thích Nghi (S):'
+                '🌿 2. Tháng Canh Tác (Đánh Giá Điểm S):'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -116,8 +165,60 @@ def _hien_tab_thoi_vu(dl, vung, nam_mac_dinh, thang_mac_dinh, years):
                 label_visibility="collapsed",
                 key="ctrl_thang_thoi_vu",
             )
-            if thang_chon:
+            if thang_chon and thang_chon != st.session_state[key_thang]:
                 st.session_state[key_thang] = int(thang_chon)
+                st.rerun()
+
+        with col_d_box:
+            st.markdown(
+                '<div style="font-size:11.5px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '📆 3. Chọn Ngày Gieo Cấy / Khảo Sát:'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            ngay_chon = st.date_input(
+                "Ngày khảo sát thời vụ:",
+                value=st.session_state[key_date],
+                min_value=min_date,
+                max_value=max_date,
+                key="widget_filter_date_thoi_vu",
+                format="DD/MM/YYYY",
+                label_visibility="collapsed",
+            )
+            if ngay_chon and (ngay_chon.year != cur_nam or ngay_chon.month != cur_thang or ngay_chon != st.session_state[key_date]):
+                st.session_state[key_date] = ngay_chon
+                st.session_state[key_nam] = ngay_chon.year
+                st.session_state[key_thang] = ngay_chon.month
+                st.rerun()
+
+        cur_nam = int(st.session_state[key_nam])
+        cur_thang = int(st.session_state[key_thang])
+        cur_date = st.session_state[key_date]
+
+        # Trích xuất số liệu telemetry thực đo ngày
+        tele_str = ""
+        if not df_daily.empty:
+            r_day = df_daily[df_daily["date_dt"].dt.date == cur_date]
+            if not r_day.empty:
+                r0 = r_day.iloc[0]
+                tmax_d = float(r0.get("T2M_MAX", 0))
+                tmin_d = float(r0.get("T2M_MIN", 0))
+                mua_d = float(r0.get("PRECTOTCORR", 0)) if pd.notna(r0.get("PRECTOTCORR")) else 0.0
+                rh_d = float(r0.get("RH2M", 70)) if pd.notna(r0.get("RH2M")) else 70.0
+                tele_str = (
+                    f'Tmax: <b style="color:#DC2626;">{tmax_d:.1f}°C</b> · '
+                    f'Tmin: <b style="color:#0284C7;">{tmin_d:.1f}°C</b> · '
+                    f'Mưa: <b style="color:#0284C7;">{mua_d:.1f} mm</b> · '
+                    f'Ẩm: <b style="color:#16A34A;">{rh_d:.0f}%</b>'
+                )
+
+        st.markdown(
+            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px; gap:8px;">'
+            f'  <div>📌 Đang đánh giá thời vụ gieo cấy: <b style="color:#0F766E; font-size:12.5px;">Ngày {cur_date.strftime("%d/%m/%Y")}</b> (Tháng {cur_thang}/{cur_nam})</div>'
+            f'  <div style="color:#334155;">{"🛰️ Telemetry Ngày: " + tele_str if tele_str else ""}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     sel_nam = int(st.session_state[key_nam])
     sel_thang = int(st.session_state[key_thang])

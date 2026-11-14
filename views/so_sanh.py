@@ -1,6 +1,8 @@
 """Trang So sánh giữa các năm — Đối chiếu Khí hậu & Rủi ro Vụ Lúa Yên Thành.
 Thiết kế đồ họa trực quan chuẩn AgTech (3 Thẻ Đối chiếu Độc lập, Hero Badges, Không méo biểu đồ).
 """
+import calendar
+import datetime
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -8,6 +10,22 @@ import streamlit as st
 
 import engine as E
 from views.chung import tieu_de, ve
+
+
+@st.cache_data(show_spinner=False)
+def _tai_daily_power():
+    """Tải chuỗi dữ liệu thời tiết & viễn thám từng ngày huyện Yên Thành (2018–2026)."""
+    p = "data/raw/power/power_Yen_Thanh.csv"
+    try:
+        df = pd.read_csv(p)
+        df["date_dt"] = pd.to_datetime(df["date"])
+        df = df.dropna(subset=["T2M_MAX"])
+        df["year"] = df["date_dt"].dt.year
+        df["month"] = df["date_dt"].dt.month
+        df["day"] = df["date_dt"].dt.day
+        return df
+    except Exception:
+        return pd.DataFrame()
 
 
 def ve_cot_don(x_vals, y_vals, nam_hien_tai, mau_chinh, don_vi="", fmt="{:.0f}"):
@@ -85,9 +103,10 @@ def hien(ctx):
         unsafe_allow_html=True,
     )
 
-    tab_dot, tab_thang = st.tabs([
+    tab_dot, tab_thang, tab_ngay = st.tabs([
         "🌾 Đối chiếu theo Đợt Mùa Vụ Đa Năm",
-        "📈 So Sánh Chuỗi 12 Tháng Liên Tục"
+        "📈 So Sánh Chuỗi 12 Tháng Liên Tục",
+        "📆 Đối Chiếu Cùng Ngày Qua Các Năm (2018–2026)",
     ])
 
     # -------------------------------------------------------------------------
@@ -392,3 +411,115 @@ def hien(ctx):
                     st.dataframe(q, width="stretch")
                 except TypeError:
                     st.dataframe(q, use_container_width=True)
+
+    # -------------------------------------------------------------------------
+    # TAB 3: ĐỐI CHIẾU CÙNG NGÀY QUA CÁC NĂM (DAY-OF-YEAR COMPARISON 2018–2026)
+    # -------------------------------------------------------------------------
+    with tab_ngay:
+        df_daily = _tai_daily_power()
+        if df_daily.empty:
+            st.error("Chưa có chuỗi số liệu thời tiết viễn thám từng ngày (data/raw/power/power_Yen_Thanh.csv).")
+        else:
+            min_date = df_daily["date_dt"].dt.date.min()
+            max_date = df_daily["date_dt"].dt.date.max()
+
+            key_d_ss = "date_pick_so_sanh"
+            if key_d_ss not in st.session_state or not isinstance(st.session_state[key_d_ss], datetime.date):
+                st.session_state[key_d_ss] = datetime.date(2026, 4, 15)
+
+            with st.container(border=True):
+                st.markdown(
+                    '<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+                    '🔍 Chọn Ngày Mốc Khảo Sát Để Đối Chiếu Đa Năm (2018–2026):'
+                    '</div>'
+                    '<div style="font-size:11.5px; color:#64748B; margin-bottom:8px;">'
+                    'Xem cùng một ngày lịch (ví dụ ngày 15/04 hoặc 22/06) đã diễn biến thời tiết, nhiệt độ và mưa như thế nào qua tất cả các năm lịch sử.'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+
+                c_d1, c_d2 = st.columns([4.0, 8.0], gap="small")
+                with c_d1:
+                    ngay_moc = st.date_input(
+                        "Ngày mốc đối chiếu:",
+                        value=st.session_state[key_d_ss],
+                        min_value=min_date,
+                        max_value=max_date,
+                        key="widget_date_pick_so_sanh",
+                        format="DD/MM/YYYY",
+                        label_visibility="collapsed",
+                    )
+                    if ngay_moc:
+                        st.session_state[key_d_ss] = ngay_moc
+                with c_d2:
+                    st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">⚡ ĐIỂM MỐC THỜI TIẾT CỰC ĐOAN:</div>', unsafe_allow_html=True)
+                    sb1, sb2, sb3 = st.columns(3, gap="small")
+                    with sb1:
+                        if st.button("🌸 Trỗ lúa xuân (15/04)", key="btn_ss_xuan", use_container_width=True):
+                            st.session_state[key_d_ss] = datetime.date(2026, 4, 15)
+                            st.rerun()
+                    with sb2:
+                        if st.button("🔥 Đỉnh hạn 2019 (22/06)", key="btn_ss_han", use_container_width=True):
+                            st.session_state[key_d_ss] = datetime.date(2019, 6, 22)
+                            st.rerun()
+                    with sb3:
+                        if st.button("🌊 Đỉnh lũ 2020 (19/10)", key="btn_ss_lu", use_container_width=True):
+                            st.session_state[key_d_ss] = datetime.date(2020, 10, 19)
+                            st.rerun()
+
+            cur_moc = st.session_state[key_d_ss]
+            d_target = cur_moc.day
+            m_target = cur_moc.month
+
+            # Lọc dữ liệu cùng ngày (d_target, m_target) qua các năm
+            df_cung_ngay = df_daily[(df_daily["month"] == m_target) & (df_daily["day"] == d_target)].sort_values("year")
+
+            if df_cung_ngay.empty:
+                st.warning(f"Không có dữ liệu đối chiếu cho ngày {d_target:02d}/{m_target:02d}.")
+            else:
+                x_years = [str(y) for y in df_cung_ngay["year"]]
+                tmax_vals = df_cung_ngay["T2M_MAX"].tolist()
+                mua_vals = [float(v) if pd.notna(v) else 0.0 for v in df_cung_ngay["PRECTOTCORR"]]
+                rad_vals = [float(v) if pd.notna(v) else 0.0 for v in df_cung_ngay["ALLSKY_SFC_SW_DWN"]]
+
+                st.markdown(
+                    f'<div style="font-size:12.5px; font-weight:800; color:#0F172A; margin:10px 0 6px 0;">'
+                    f'📊 Đối Chiếu Cùng Ngày <b style="color:#0F766E;">{d_target:02d}/{m_target:02d}</b> Qua 9 Năm (2018–2026) Tại Yên Thành:'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+                c_ss1, c_ss2, c_ss3 = st.columns(3, gap="small")
+
+                with c_ss1, st.container(border=True):
+                    st.markdown(
+                        '<div style="font-size:13px; font-weight:800; color:#EA580C; margin-bottom:4px;">🌡️ Nhiệt độ Tmax (°C)</div>',
+                        unsafe_allow_html=True,
+                    )
+                    fig_tmax_day = ve_cot_don(x_years, tmax_vals, str(cur_moc.year), "#EA580C", "°C", "{:.1f}")
+                    ve(fig_tmax_day, che_do="co_dinh")
+
+                with c_ss2, st.container(border=True):
+                    st.markdown(
+                        '<div style="font-size:13px; font-weight:800; color:#0284C7; margin-bottom:4px;">🌧️ Lượng mưa ngày (mm)</div>',
+                        unsafe_allow_html=True,
+                    )
+                    fig_mua_day = ve_cot_don(x_years, mua_vals, str(cur_moc.year), "#0284C7", "mm", "{:.1f}")
+                    ve(fig_mua_day, che_do="co_dinh")
+
+                with c_ss3, st.container(border=True):
+                    st.markdown(
+                        '<div style="font-size:13px; font-weight:800; color:#D97706; margin-bottom:4px;">☀️ Bức xạ mặt trời (MJ/m²)</div>',
+                        unsafe_allow_html=True,
+                    )
+                    fig_rad_day = ve_cot_don(x_years, rad_vals, str(cur_moc.year), "#D97706", "MJ", "{:.1f}")
+                    ve(fig_rad_day, che_do="co_dinh")
+
+                # Bảng chi tiết
+                with st.expander(f"📋 Bảng số liệu chi tiết ngày {d_target:02d}/{m_target:02d} qua 9 năm (2018–2026)", expanded=False):
+                    tbl_day = df_cung_ngay[["year", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "RH2M", "ALLSKY_SFC_SW_DWN", "WS2M"]].copy()
+                    tbl_day.columns = ["Năm", "Tmax (°C)", "Tmin (°C)", "Mưa (mm)", "Độ ẩm (%)", "Bức xạ (MJ/m²)", "Tốc độ gió (m/s)"]
+                    try:
+                        st.dataframe(tbl_day.sort_values("Năm", ascending=False), hide_index=True, width="stretch")
+                    except TypeError:
+                        st.dataframe(tbl_day.sort_values("Năm", ascending=False), hide_index=True, use_container_width=True)
