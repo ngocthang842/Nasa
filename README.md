@@ -7,10 +7,11 @@ Dự án tích hợp dữ liệu viễn thám từ vệ tinh NASA để phân t�
 ---
 
 ## 🚀 1. Tính năng chính của Dashboard
-- **Bản đồ khu vực:** Hiển thị ranh giới 3 huyện trực quan.
-- **Đèn giao thông rủi ro:** Cảnh báo tức thời theo tháng về tình trạng Nắng nóng, Lượng mưa và Độ ẩm đất.
-- **Lịch rủi ro 12 tháng:** Nhận diện trực quan các "cửa sổ rủi ro" (Gió Lào mùa hè, Mưa lũ mùa thu) để nông dân tránh gieo hạt.
-- **Bộ lọc kịch bản luân canh:** Nông dân tự điều chỉnh thanh trượt (Ưu tiên Nước / Đất / Kinh tế), hệ thống sẽ tự động chấm điểm và gợi ý kịch bản tối ưu nhất.
+- **Kế hoạch Luân canh theo Đợt Canh tác:** Chia chu kỳ cả năm thành các đợt gieo trồng (Vụ Xuân, Vụ Hè Thu, Vụ Thu Đông/Đông hoặc tùy chỉnh). Nông hộ có thể linh hoạt bố trí số lượng cây trồng khác nhau cho từng đợt (chuyên canh 1 cây, đa canh 2-3 cây, hoặc để ải đất).
+- **Hỗ trợ Ra quyết định dựa trên Dữ liệu Lịch sử Đa năm:** Hệ thống phân tích chuỗi dữ liệu vệ tinh (MODIS, SMAP, GPM) và khí tượng NASA POWER của các năm trước (2024, 2025...) kết hợp chuẩn 11 năm để chấm điểm an toàn, nhận diện cửa sổ rủi ro lịch sử và xếp hạng các cây trồng phù hợp nhất cho từng đợt.
+- **Biểu đồ Timeline Luân canh Cả năm:** Trực quan hóa kế hoạch phân bổ cây trồng qua 12 tháng, chấm điểm an toàn khí hậu, tiết kiệm nước tưới, phục hồi độ phì đất và hiệu quả kinh tế.
+- **Bản đồ khu vực & Vệ tinh tương tác:** Hiển thị ranh giới 3 huyện, bản đồ toàn quốc (gồm Hoàng Sa, Trường Sa) và bản đồ vệ tinh Folium phóng sát cánh đồng.
+- **Đèn giao thông rủi ro & Thẻ KPI:** Cảnh báo tức thời theo tháng về Nắng nóng, Lượng mưa, Độ ẩm đất và NDVI kèm đường xu hướng sparkline.
 
 ---
 
@@ -37,19 +38,30 @@ Dữ liệu gốc được trích xuất từ Google Earth Engine (GEE) và NASA
 ---
 
 ## 📁 3. Cấu trúc Thư mục Dự án
-```text
+`	ext
 Nasa/
 │
 ├── .streamlit/             # Cấu hình giao diện Streamlit (Theme sáng)
 ├── data/                   # Thư mục chứa dữ liệu
 │   ├── raw/                # Dữ liệu gốc tải từ vệ tinh NASA (CSV, GeoJSON)
-│   └── processed/          # Dữ liệu đã qua xử lý (bảng gộp, tính điểm rủi ro)
+│   └── processed/          # Dữ liệu đã qua xử lý (bảng gộp, rủi ro, gió Lào)
 │
-├── src/                    # (Tùy chọn) Chứa các module phụ trợ
+├── views/                  # Các phân hệ giao diện Dashboard
+│   ├── tong_quan.py        # Phân hệ Tổng quan (KPI, bản đồ, rủi ro tháng)
+│   ├── cay_vung.py         # Phân hệ Cây theo vùng & Thổ nhưỡng
+│   ├── luan_canh.py        # Phân hệ Kế hoạch Luân canh theo Đợt
+│   ├── so_sanh.py          # Phân hệ So sánh chuỗi thời gian các năm
+│   ├── du_lieu.py          # Phân hệ Bảng số liệu chi tiết
+│   ├── ban_do.py           # Bản đồ Plotly đa lớp & ranh giới
+│   ├── ve_tinh.py          # Bản đồ vệ tinh Folium phóng sát cánh đồng
+│   └── chung.py            # CSS, thẻ KPI sparkline, thẻ đánh giá
+│
 ├── app.py                  # File chính khởi chạy giao diện Web Dashboard
-├── gio_lao.py              # Script phân tích đặc điểm gió Lào (nếu có)
+├── engine.py               # Lõi xử lý nghiệp vụ, lịch mùa vụ & thuật toán chấm điểm
+├── gio_lao.py              # Script phân tích đặc điểm gió Lào lịch sử
 ├── gop_du_lieu.py          # Script gộp và tính toán dữ liệu từ data/raw
 ├── rui_ro.py               # Script phân tích logic rủi ro nông học
 ├── lay_power.py            # Script lấy dữ liệu NASA POWER
 ├── requirements.txt        # Danh sách các thư viện cần thiết
 └── README.md               # Tài liệu hướng dẫn này
+`
