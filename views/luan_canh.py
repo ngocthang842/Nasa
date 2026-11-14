@@ -29,7 +29,63 @@ def hien(ctx):
     vung = "Yên Thành"
 
     # 1. HEADER CHUẨN
-    tieu_de(vung, thang, nam, "KẾ HOẠCH MÙA VỤ & CƠ CẤU 2 VỤ THUẦN LÚA YÊN THÀNH", len(years) < 2)
+    key_nam = "filter_nam_thuan_lua"
+    key_thang = "filter_thang_thuan_lua"
+
+    if key_nam not in st.session_state:
+        st.session_state[key_nam] = nam
+    if key_thang not in st.session_state:
+        st.session_state[key_thang] = thang
+
+    nam_cur = int(st.session_state[key_nam])
+    thang_cur = int(st.session_state[key_thang])
+
+    tieu_de(vung, thang_cur, nam_cur, "KẾ HOẠCH MÙA VỤ & CƠ CẤU 2 VỤ THUẦN LÚA YÊN THÀNH", len(years) < 2)
+
+    # 1.5 BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT (NĂM 2018–2026 & THÁNG T1–T12)
+    with st.container(border=True):
+        col_y_lbl, col_y_val = st.columns([3.2, 8.8], gap="small")
+        with col_y_lbl:
+            st.markdown(
+                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
+                '📅 1. Chuỗi Năm Khảo Sát (2018–2026):'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        with col_y_val:
+            nam_chon = st.pills(
+                "Năm khảo sát lúa thuần:",
+                options=years,
+                default=st.session_state[key_nam],
+                format_func=lambda y: f"🌟 Năm {y} (Kế hoạch)" if y == 2026 else (f"📅 {y}" if y >= 2024 else f"📜 {y}"),
+                label_visibility="collapsed",
+                key="ctrl_nam_thuan_lua",
+            )
+            if nam_chon:
+                st.session_state[key_nam] = int(nam_chon)
+
+        col_m_lbl, col_m_val = st.columns([3.2, 8.8], gap="small")
+        with col_m_lbl:
+            st.markdown(
+                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
+                '🌿 2. Tháng Trọng Tâm Khảo Sát:'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        with col_m_val:
+            thang_chon = st.pills(
+                "Tháng khảo sát vụ lúa:",
+                options=list(range(1, 13)),
+                default=st.session_state[key_thang],
+                format_func=lambda m: f"T{m} {ICON_THANG.get(m, '')}",
+                label_visibility="collapsed",
+                key="ctrl_thang_thuan_lua",
+            )
+            if thang_chon:
+                st.session_state[key_thang] = int(thang_chon)
+
+    nam = int(st.session_state[key_nam])
+    thang = int(st.session_state[key_thang])
 
     # ĐỊNH HÌNH 3 ĐỢT CHUẨN 2 VỤ LÚA THUẦN + PHƠI ẢI VỤ ĐÔNG
     cac_dot = [

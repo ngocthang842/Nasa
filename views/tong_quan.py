@@ -208,12 +208,12 @@ def hien(ctx):
             st.markdown("<div style='font-size:11px; font-weight:750; color:#64748B; text-transform:uppercase; margin-bottom:4px;'>Lối tắt nhanh:</div>", unsafe_allow_html=True)
             c_nav1, c_nav2 = st.columns(2, gap="small")
             with c_nav1:
-                if st.button("🌾 Lập Luân Canh", key="btn_quick_luan_canh", use_container_width=True, help="Chuyển đến module Kế hoạch Luân canh"):
-                    st.session_state["menu_dieu_huong"] = "🌾  Kế hoạch Luân canh"
+                if st.button("🌾 Lập Luân Canh", key="btn_quick_luan_canh", use_container_width=True, help="Chuyển đến module Kế hoạch Luân canh & Sức khỏe Đất"):
+                    st.session_state["menu_dieu_huong"] = "🌾  Kế hoạch Luân canh & Sức khỏe Đất"
                     st.rerun()
             with c_nav2:
                 if st.button("🎯 Dự Báo 2027", key="btn_quick_du_bao_2027", use_container_width=True, help="Chuyển đến module Thời vụ Gieo cấy & Dự báo Năng suất 2027"):
-                    st.session_state["menu_dieu_huong"] = "🎯  Thời vụ & Dự báo 2027"
+                    st.session_state["menu_dieu_huong"] = "🎯  Thời vụ & Dự báo Năng suất 2027"
                     st.rerun()
 
         st.markdown("<hr style='margin:10px 0 12px 0; border-color:#F1F5F9;'>", unsafe_allow_html=True)

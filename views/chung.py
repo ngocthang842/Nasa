@@ -117,25 +117,24 @@ ul[role="listbox"] li:hover * {
 }
 
 /* THIẾT KẾ MENU SIDEBAR NASA NEDA DẠNG THẺ LỚN (EXPANDED CARDS) */
-/* THIẾT KẾ MENU SIDEBAR NASA NEDA DẠNG THẺ SLIM HIỆN ĐẠI (AGTECH SAAS) */
 div[data-testid="stSidebar"] div[data-testid="stRadio"] [role="radiogroup"] {
   display: flex !important;
   flex-direction: column !important;
-  gap: 5px !important;
-  padding: 2px 0 !important;
+  gap: 8px !important;
+  padding: 4px 0 !important;
 }
 
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label {
   display: flex !important;
   align-items: center !important;
-  background: rgba(255, 255, 255, 0.025) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 9px !important;
-  padding: 8px 12px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
   margin: 0 !important;
   cursor: pointer !important;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* ẨN TRIỆT ĐỂ 100% DẤU CHẤM TRÒN RADIO TRÊN MỌI PHIÊN BẢN STREAMLIT */
@@ -169,23 +168,23 @@ div[data-testid="stSidebar"] [role="radiogroup"] label > div:first-child {
   visibility: hidden !important;
 }
 
-/* CHỮ MENU MẶC ĐỊNH: TO VỪA PHẢI (13.5px), MÀU BẠC ÁNH KIM */
+/* CHỮ MENU MẶC ĐỊNH: TO RÕ RÀNG (15px), MÀU BẠC ÁNH KIM */
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label p,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label span,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label * {
   color: #94A3B8 !important;
-  font-size: 13.5px !important;
+  font-size: 15px !important;
   font-weight: 600 !important;
-  line-height: 1.3 !important;
+  line-height: 1.35 !important;
   letter-spacing: -0.1px !important;
 }
 
 /* HOVER: SÁNG BỪNG TRẮNG BẠC, TRƯỢT NHẸ SANG PHẢI */
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {
-  background: rgba(255, 255, 255, 0.07) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(45, 212, 191, 0.35) !important;
-  transform: translateX(3px) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
 }
 
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover p,
@@ -193,43 +192,21 @@ div[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover * {
   color: #FFFFFF !important;
 }
 
-/* MỤC ĐANG CHỌN (ACTIVE): NỀN GRADIENT TEAL, VIỀN XANH NGỌC SÁNG */
+/* MỤC ĐANG CHỌN (ACTIVE): PHÓNG TO, NỀN GRADIENT TEAL, VIỀN XANH NGỌC SÁNG */
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) {
-  background: linear-gradient(90deg, rgba(20, 184, 166, 0.22) 0%, rgba(20, 184, 166, 0.08) 100%) !important;
-  border: 1px solid rgba(45, 212, 191, 0.5) !important;
-  border-left: 4px solid #2DD4BF !important;
-  border-radius: 9px !important;
-  box-shadow: 0 2px 10px rgba(20, 184, 166, 0.15) !important;
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.24) 0%, rgba(20, 184, 166, 0.10) 100%) !important;
+  border: 1.5px solid rgba(45, 212, 191, 0.5) !important;
+  border-left: 5px solid #2DD4BF !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(20, 184, 166, 0.2) !important;
 }
 
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) p,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) span,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) * {
   color: #2DD4BF !important;
-  font-size: 14px !important;
-  font-weight: 750 !important;
-}
-
-/* BỘ CHỌN PHÂN HỆ PILLS TRONG SIDEBAR THEME TỐI */
-[data-testid="stSidebar"] div[data-testid="stPills"] {
-  margin-bottom: 8px !important;
-}
-[data-testid="stSidebar"] div[data-testid="stPills"] button {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #94A3B8 !important;
-  font-size: 11.5px !important;
-  font-weight: 650 !important;
-  border-radius: 8px !important;
-  padding: 4px 8px !important;
-}
-[data-testid="stSidebar"] div[data-testid="stPills"] button[aria-selected="true"],
-[data-testid="stSidebar"] div[data-testid="stPills"] button[data-checked="true"] {
-  background: #0284C7 !important;
-  border-color: #0284C7 !important;
-  color: #FFFFFF !important;
-  font-weight: 750 !important;
-  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
+  font-size: 15.5px !important;
+  font-weight: 800 !important;
 }
 
 /* Radio ngang (Chế độ xem Đợt vs Tháng) */
