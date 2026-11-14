@@ -478,6 +478,30 @@ def kpi_the(ten, cot, don_vi, mau, chuoi, thang, xau_la_xau="cao", fmt="{:.0f}",
     )
 
 
+def kpi_the_dot(ten, gia_tri, don_vi, mau, sub_tag="", delta_val=None, xau_la_xau="cao", fmt="{:.0f}"):
+    """Tạo thẻ KPI chuyên biệt cho một đợt canh tác (tổng hợp nhiều tháng)."""
+    val_str = fmt.format(gia_tri) if pd.notna(gia_tri) else "—"
+    unit_str = f"<small style='font-size:12px; font-weight:500; color:#64748B;'>{don_vi}</small>" if don_vi else ""
+    
+    d_html = ""
+    if delta_val is not None and pd.notna(delta_val):
+        dd = delta_val
+        xau = (dd > 0) == (xau_la_xau == "cao")
+        cls = "up" if xau and dd else ("dn" if dd else "nt")
+        sign = "▲ +" if dd > 0 else "▼ "
+        d_html = f'<div class="d {cls}">{sign}{abs(dd):{fmt[2:-1]}} so với 2025</div>'
+    elif sub_tag:
+        d_html = f'<div style="font-size:11px; color:#64748B; margin-top:2px; font-weight:550;">{sub_tag}</div>'
+    
+    return (
+        f'<div class="kpi" style="border-top:3.5px solid {mau};">'
+        f'<div class="l" style="font-size:11px; font-weight:750; color:#475569; text-transform:uppercase;">{ten}</div>'
+        f'<div class="v" style="color:#0F172A; margin:3px 0 2px 0;">{val_str} {unit_str}</div>'
+        f'{d_html}'
+        f'</div>'
+    )
+
+
 def the_cay(cur_d):
     """Dùng to_dict để tránh lỗi dat_txt với itertuples, ưu tiên Cây Lúa hiển thị lên đầu."""
     if cur_d is None or len(cur_d) == 0:

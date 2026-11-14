@@ -14,7 +14,38 @@ from plotly.subplots import make_subplots
 
 import engine as E
 from views.ban_do import hien_ban_do
-from views.chung import kpi_the, ve
+from views.chung import kpi_the, kpi_the_dot, ve
+
+# DANH SÁCH 3 ĐỢT CANH TÁC MẶC ĐỊNH CHUẨN NÔNG HỌC YÊN THÀNH
+DEFAULT_DOTS = [
+    {
+        "id": "dot_1",
+        "ten": "Đợt 1: Vụ Lúa Chiêm Xuân",
+        "thangs": [1, 2, 3, 4, 5],
+        "cay": "Lúa",
+        "mau": "#16A34A",
+        "ic": "🌾",
+        "mota": "Vụ lúa chính số 1: Gieo mạ chống rét T1, trỗ rộ T4 né táp gió Lào, thu hoạch dứt điểm T5.",
+    },
+    {
+        "id": "dot_2",
+        "ten": "Đợt 2: Vụ Lúa Hè Thu",
+        "thangs": [6, 7, 8, 9],
+        "cay": "Lúa",
+        "mau": "#D97706",
+        "ic": "☀️",
+        "mota": "Vụ lúa chạy lụt: Cấy cực nhanh trước 10/6, chống hạn đỉnh T7, gặt trước 15/9 né lũ Kênh Vách Bắc.",
+    },
+    {
+        "id": "dot_3",
+        "ten": "Đợt 3: Phơi Ải & Vụ Đông",
+        "thangs": [10, 11, 12],
+        "cay": "Ngô",
+        "mau": "#0284C7",
+        "ic": "🚜",
+        "mota": "Cày sâu phơi nỏ ruộng diệt mầm đạo ôn, xen canh Ngô ngọt, Lạc thu đông, đón nước sông Lam T12.",
+    },
+]
 
 # ICON & GIAI ĐOẠN SINH THÁI 12 THÁNG LÚA YÊN THÀNH
 ICON_THANG = {
@@ -142,29 +173,203 @@ def hien(ctx):
     chuoi = dl[(dl.year == nam) & (dl.huyen == vung)].sort_values("month")
     co_thang = sorted(chuoi.month.unique()) if not chuoi.empty else list(range(1, 13))
 
-    thang_khoi_tao = ctx.get("thang", 4)
-    if thang_khoi_tao not in co_thang:
-        thang_khoi_tao = 4 if 4 in co_thang else co_thang[0]
+    # Khởi tạo danh sách các đợt canh tác trong session_state nếu chưa có
+    if "danh_sach_dot" not in st.session_state:
+        st.session_state["danh_sach_dot"] = list(DEFAULT_DOTS)
+
+    danh_sach_dot = st.session_state["danh_sach_dot"]
 
     # =========================================================================
-    # TẦNG 1: MASTER COMMAND HEADER & TIMELINE MÙA VỤ 12 THÁNG (GỘP GỌN GÀNG)
+    # TẦNG 1: BỘ ĐIỀU HƯỚNG MÙA VỤ DUAL-MODE (ĐỢT CANH TÁC & CHI TIẾT TỪNG THÁNG)
     # =========================================================================
     with st.container(border=True):
-        c_ttl, c_pills = st.columns([4, 6], gap="medium")
-        with c_ttl:
+        col_hdr_left, col_hdr_right = st.columns([6.8, 3.2], gap="small")
+        with col_hdr_left:
             st.markdown(
-                f'<div style="padding:2px 0;">'
-                f'<div style="font-size:10.5px; font-weight:750; color:#64748B; text-transform:uppercase; letter-spacing:0.08em;">🛰️ VIỄN THÁM NÔNG NGHIỆP NASA · VỰA LÚA XỨ NGHỆ</div>'
-                f'<div style="font-size:22px; font-weight:800; color:#0F172A; letter-spacing:-0.4px; line-height:1.2; margin-top:2px;">🌾 Huyện Yên Thành · Vụ Lúa {nam}</div>'
-                f'<div style="font-size:12px; color:#475569; margin-top:3px;">Hệ thống thủy nông Ba Ra Đô Lương & Giám sát Viễn thám MODIS, SMAP, GPM</div>'
-                f'</div>',
+                f"""
+                <div style="padding:2px 0;">
+                  <div style="font-size:11px; font-weight:750; color:#64748B; text-transform:uppercase; letter-spacing:0.08em;">🛰️ VIỄN THÁM NÔNG NGHIỆP NASA · VỰA LÚA XỨ NGHỆ</div>
+                  <div style="font-size:21px; font-weight:800; color:#0F172A; letter-spacing:-0.4px; line-height:1.2; margin-top:2px;">🌾 Huyện Yên Thành · Vụ Lúa & Chu Kỳ Canh Tác {nam}</div>
+                  <div style="font-size:12px; color:#475569; margin-top:2px;">Hệ thống thủy nông Ba Ra Đô Lương & Giám sát Viễn thám MODIS, SMAP, GPM</div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-        with c_pills:
+        with col_hdr_right:
+            st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
+            che_do_xem = st.segmented_control(
+                "Chế độ khảo sát:",
+                options=["🌾 Theo Đợt Canh Tác", "📅 Theo Từng Tháng"],
+                default="🌾 Theo Đợt Canh Tác",
+                key=f"seg_che_do_khao_sat_{nam}",
+                label_visibility="collapsed",
+            ) if hasattr(st, "segmented_control") else st.radio("Chế độ khảo sát:", ["🌾 Theo Đợt Canh Tác", "📅 Theo Từng Tháng"], horizontal=True, key=f"rad_che_do_{nam}", label_visibility="collapsed")
+
+        st.markdown("<hr style='margin:8px 0 12px 0; border-color:#F1F5F9;'>", unsafe_allow_html=True)
+
+        # ---------------------------------------------------------------------
+        # NHÁNH 1: XEM THEO ĐỢT CANH TÁC (CROP SEASON BATCHES)
+        # ---------------------------------------------------------------------
+        if che_do_xem == "🌾 Theo Đợt Canh Tác":
+            options_dot = [f"{d['ic']} {d['ten']} (T{min(d['thangs'])}–T{max(d['thangs'])})" for d in danh_sach_dot]
+            
+            c_pills_dot, c_toggle_builder = st.columns([7.8, 2.2], gap="small")
+            with c_pills_dot:
+                dot_label_chon = st.pills(
+                    "Chọn đợt canh tác:",
+                    options=options_dot,
+                    default=options_dot[0] if options_dot else None,
+                    key=f"pills_dot_canh_tac_{nam}",
+                    label_visibility="collapsed",
+                )
+                if not dot_label_chon and options_dot:
+                    dot_label_chon = options_dot[0]
+
+            with c_toggle_builder:
+                open_builder = st.toggle("🛠️ Tự tạo & Gom tháng", key="toggle_open_batch_builder")
+
+            # Lấy thông tin đợt đang chọn
+            idx_dot = options_dot.index(dot_label_chon) if dot_label_chon in options_dot else 0
+            cur_dot = danh_sach_dot[idx_dot]
+            thangs_dot = cur_dot["thangs"]
+
+            # RENDER DÒNG THỜI GIAN 12 THÁNG TRỰC QUAN (HIGHLIGHT CÁC THÁNG TRONG ĐỢT)
+            ribbon_boxes = ""
+            for m in range(1, 13):
+                ic = ICON_THANG.get(m, "")
+                if m in thangs_dot:
+                    # Tháng nằm trong đợt -> Nổi bật màu sắc
+                    bg_m = "#EFF6FF" if cur_dot["mau"] == "#0284C7" else ("#FEF3C7" if cur_dot["mau"] == "#D97706" else "#DCFCE7")
+                    border_m = f"border:2px solid {cur_dot['mau']};"
+                    color_m = cur_dot["mau"]
+                    badge_m = f'<div style="font-size:9px; font-weight:800; color:{cur_dot["mau"]};">ĐANG XEM</div>'
+                else:
+                    # Tháng ngoài đợt -> Chìm nhẹ
+                    bg_m = "#F8FAFC"
+                    border_m = "border:1px dashed #CBD5E1;"
+                    color_m = "#94A3B8"
+                    badge_m = '<div style="font-size:9px; color:#94A3B8;">—</div>'
+
+                ribbon_boxes += f"""
+                <div style="flex:1 1 0; background:{bg_m}; {border_m} border-radius:8px; padding:6px 2px; text-align:center; min-width:48px;">
+                  <div style="font-size:12px; font-weight:800; color:{color_m};">T{m}</div>
+                  <div style="font-size:14px; margin:2px 0;">{ic}</div>
+                  {badge_m}
+                </div>
+                """
+
+            st.markdown(
+                f"""
+                <div style="display:flex; gap:6px; overflow-x:auto; padding:4px 0 8px 0;">
+                  {ribbon_boxes}
+                </div>
+                <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid {cur_dot['mau']}; border-radius:8px; padding:7px 12px; font-size:12px; color:#1E293B; margin-top:2px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                  <div>
+                    <b>📌 {cur_dot['ten']}:</b> Gồm <b>{len(thangs_dot)} tháng</b> (Tháng {min(thangs_dot)} $\\rightarrow$ Tháng {max(thangs_dot)}) · Cây trồng chủ lực: <b style="color:{cur_dot['mau']};">{cur_dot['cay']}</b> — <i>{cur_dot['mota']}</i>
+                  </div>
+                  <div style="font-size:11px; font-weight:750; color:{cur_dot['mau']}; background:#FFFFFF; border:1px solid {cur_dot['mau']}; border-radius:999px; padding:2px 10px;">
+                    {cur_dot['ic']} {cur_dot['cay']} Yên Thành
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # THIẾT LẬP THÁNG ĐẠI DIỆN ĐỂ BẢN ĐỒ VÀ COCKPIT HOẠT ĐỘNG
+            thang = 4 if 4 in thangs_dot else (8 if 8 in thangs_dot else thangs_dot[len(thangs_dot)//2])
+
+            # -----------------------------------------------------------------
+            # BỘ CÔNG CỤ TẠO ĐỢT & GOM THÁNG (BATCH BUILDER DRAWER)
+            # -----------------------------------------------------------------
+            if open_builder:
+                with st.container(border=True):
+                    st.markdown(
+                        '<div style="font-size:14px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+                        '🛠️ Quản Lý & Tự Tạo Đợt Canh Tác Mới (Thêm / Xóa / Tự Chọn Tháng Vào Đợt)'
+                        '</div>'
+                        '<div style="font-size:12px; color:#64748B; margin-bottom:12px;">'
+                        'Tự do chia đợt canh tác và gom nhóm các tháng theo tập quán chân ruộng (ruộng trũng lòng chảo vs ruộng vàn cao Yên Thành).'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    col_b1, col_b2, col_b3 = st.columns([4, 3, 5], gap="small")
+                    with col_b1:
+                        ten_moi = st.text_input("Tên đợt vụ mới:", value=f"Đợt {len(danh_sach_dot)+1}: Vụ Mới", key="inp_ten_dot_moi")
+                    with col_b2:
+                        cay_moi = st.selectbox("Cây trồng chủ lực:", ["Lúa", "Lạc", "Ngô", "Rau màu"], index=0, key="sel_cay_dot_moi")
+                    with col_b3:
+                        thangs_moi = st.multiselect(
+                            "Chọn các tháng đưa vào đợt này:",
+                            options=list(range(1, 13)),
+                            default=[5, 6, 7],
+                            format_func=lambda m: f"Tháng {m}",
+                            key="mul_thangs_dot_moi",
+                        )
+                    
+                    col_desc, col_btn_add = st.columns([8, 2], gap="small")
+                    with col_desc:
+                        mota_moi = st.text_input("Ghi chú mục tiêu canh tác:", value="Tự chọn chuỗi tháng canh tác tối ưu theo điều kiện thời tiết.", key="inp_mota_dot_moi")
+                    with col_btn_add:
+                        st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
+                        if st.button("➕ Thêm Đợt", key="btn_add_dot_moi", type="primary", use_container_width=True):
+                            if not thangs_moi:
+                                st.error("Vui lòng chọn ít nhất 1 tháng cho đợt mới!")
+                            else:
+                                new_dot = {
+                                    "id": f"dot_{len(danh_sach_dot)+1}_{np.random.randint(100, 999)}",
+                                    "ten": ten_moi.strip() or f"Đợt {len(danh_sach_dot)+1}",
+                                    "thangs": sorted(thangs_moi),
+                                    "cay": cay_moi,
+                                    "mau": "#16A34A" if cay_moi == "Lúa" else ("#D97706" if cay_moi == "Lạc" else "#0284C7"),
+                                    "ic": "🌾" if cay_moi == "Lúa" else ("🥜" if cay_moi == "Lạc" else ("🌽" if cay_moi == "Ngô" else "🥬")),
+                                    "mota": mota_moi.strip(),
+                                }
+                                st.session_state["danh_sach_dot"].append(new_dot)
+                                st.toast(f"✅ Đã thêm '{new_dot['ten']}' vào danh sách đợt!", icon="🌾")
+                                st.rerun()
+
+                    # CÁC NÚT CÀI ĐẶT MẪU NHANH
+                    st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+                    cp1, cp2, cp3, cp4 = st.columns([3, 3, 3, 3])
+                    with cp1:
+                        if st.button("🌾 2 Vụ Lúa Truyền Thống", key="btn_preset_2vu", use_container_width=True):
+                            st.session_state["danh_sach_dot"] = [
+                                {"id": "dot_1", "ten": "Đợt 1: Vụ Chiêm Xuân", "thangs": [1, 2, 3, 4, 5], "cay": "Lúa", "mau": "#16A34A", "ic": "🌾", "mota": "Gieo mạ chống rét T1, trỗ rộ T4 né táp gió Lào, gặt dứt điểm T5."},
+                                {"id": "dot_2", "ten": "Đợt 2: Vụ Hè Thu", "thangs": [6, 7, 8, 9], "cay": "Lúa", "mau": "#D97706", "ic": "☀️", "mota": "Cấy nhanh né lũ, chống hạn T7, gặt trước 15/9 né ngập lụt Kênh Vách Bắc."},
+                                {"id": "dot_3", "ten": "Đợt 3: Phơi Ải / Cải Tạo Đất", "thangs": [10, 11, 12], "cay": "Ngô", "mau": "#0284C7", "ic": "🚜", "mota": "Cày phơi nỏ ruộng diệt mầm đạo ôn, xen canh Ngô ngọt, Lạc thu đông."},
+                            ]
+                            st.rerun()
+                    with cp2:
+                        if st.button("🔄 3 Đợt Luân Canh Lúa - Màu", key="btn_preset_3vu", use_container_width=True):
+                            st.session_state["danh_sach_dot"] = [
+                                {"id": "dot_1", "ten": "Đợt 1: Lúa Xuân Sớm", "thangs": [1, 2, 3, 4], "cay": "Lúa", "mau": "#16A34A", "ic": "🌾", "mota": "Cấy giống thuần cực ngắn ngày, thu hoạch cuối tháng 4."},
+                                {"id": "dot_2", "ten": "Đợt 2: Lúa Hè Thu Sớm", "thangs": [5, 6, 7, 8], "cay": "Lúa", "mau": "#D97706", "ic": "☀️", "mota": "Gặt trước 30/8 né hoàn toàn bão lũ tháng 9."},
+                                {"id": "dot_3", "ten": "Đợt 3: Cây Màu Vụ Đông", "thangs": [9, 10, 11, 12], "cay": "Ngô", "mau": "#7C3AED", "ic": "🌽", "mota": "Trồng Ngô ngọt, Lạc thu đông, rau màu tăng thu nhập."},
+                            ]
+                            st.rerun()
+                    with cp3:
+                        if len(danh_sach_dot) > 1:
+                            if st.button(f"🗑️ Xóa đợt cuối ({danh_sach_dot[-1]['ten'][:12]}...)", key="btn_del_last_dot", use_container_width=True):
+                                st.session_state["danh_sach_dot"].pop()
+                                st.rerun()
+                    with cp4:
+                        if st.button("⟲ Khôi phục mặc định", key="btn_reset_default_dot", use_container_width=True):
+                            st.session_state["danh_sach_dot"] = list(DEFAULT_DOTS)
+                            st.rerun()
+
+        # ---------------------------------------------------------------------
+        # NHÁNH 2: XEM CHI TIẾT TỪNG THÁNG (T1 ĐẾN T12)
+        # ---------------------------------------------------------------------
+        else:
+            thang_khoi_tao = ctx.get("thang", 4)
+            if thang_khoi_tao not in co_thang:
+                thang_khoi_tao = 4 if 4 in co_thang else co_thang[0]
+
             st.markdown(
                 '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">'
-                '  <span style="font-size:11.5px; font-weight:700; color:#0F172A;">📅 Chu kỳ 12 Tháng Sinh trưởng của Lúa:</span>'
-                '  <span style="font-size:10.5px; font-weight:700; color:#16A34A; background:#DCFCE7; border-radius:999px; padding:1px 8px;">Nhấp chọn tháng</span>'
+                '  <span style="font-size:12px; font-weight:750; color:#0F172A;">📅 Chu kỳ 12 Tháng Sinh trưởng của Lúa (Nhấp chọn tháng):</span>'
+                '  <span style="font-size:11px; font-weight:700; color:#16A34A; background:#DCFCE7; border-radius:999px; padding:1px 8px;">Soi chi tiết</span>'
                 '</div>',
                 unsafe_allow_html=True,
             )
@@ -199,16 +404,58 @@ def hien(ctx):
     ctx["r"] = r
 
     # =========================================================================
-    # TẦNG 2: 5 THẺ HERO KPI KHÍ HẬU & VIỄN THÁM (ĐẦY ĐỦ 100% SỐ LIỆU)
+    # TẦNG 2: 5 THẺ HERO KPI KHÍ HẬU & VIỄN THÁM (TÍNH THEO ĐỢT HOẶC THEO THÁNG)
     # =========================================================================
     c = st.columns(5)
-    th = [
-        kpi_the("Nhiệt độ cao nhất", "tmax", "°C", "#F97316", chuoi, thang, "cao", "{:.1f}"),
-        kpi_the("Lượng mưa tích lũy", "mua_mm", "mm", "#0EA5E9", chuoi, thang, "cao"),
-        kpi_the(f"Nắng nóng ≥{E.NGUONG_NONG}°C (Gió Lào)", "nong35", "ngày", "#EF4444", chuoi, thang, "cao"),
-        kpi_the("Độ ẩm ruộng lúa (SMAP)", "sm_rootzone", "%", "#10B981", chuoi, thang, "thap", "{:.0f}", 100),
-        kpi_the("Sinh khối lúa (NDVI)", "ndvi", "", "#84CC16", chuoi, thang, "thap", "{:.2f}"),
-    ]
+    
+    if che_do_xem == "🌾 Theo Đợt Canh Tác":
+        # TÍNH TOÁN TỔNG HỢP VIỄN THÁM CHO TOÀN BỘ CÁC THÁNG TRONG ĐỢT
+        sub_dot = chuoi[chuoi.month.isin(thangs_dot)]
+        sub_dot_25 = dl[(dl.year == 2025) & (dl.huyen == vung) & (dl.month.isin(thangs_dot))]
+        
+        # 1. Nhiệt độ TB & Đỉnh cực trị
+        v_tmax = float(sub_dot["tmax"].mean()) if not sub_dot.empty else 30.0
+        v_tmax_peak = float(sub_dot["tmax"].max()) if not sub_dot.empty else 35.0
+        v_tmax_25 = float(sub_dot_25["tmax"].mean()) if not sub_dot_25.empty else v_tmax
+        d_tmax = v_tmax - v_tmax_25
+        
+        # 2. Lượng mưa tích lũy cả đợt
+        v_mua = float(sub_dot["mua_mm"].sum()) if not sub_dot.empty else 0.0
+        v_mua_25 = float(sub_dot_25["mua_mm"].sum()) if not sub_dot_25.empty else v_mua
+        d_mua = v_mua - v_mua_25
+        
+        # 3. Nắng nóng Gió Lào cả đợt
+        v_nong = int(sub_dot["nong35"].sum()) if not sub_dot.empty else 0
+        v_nong_25 = int(sub_dot_25["nong35"].sum()) if not sub_dot_25.empty else v_nong
+        d_nong = v_nong - v_nong_25
+        
+        # 4. Độ ẩm đất SMAP TB cả đợt
+        v_sm = float(sub_dot["sm_rootzone"].mean() * 100) if not sub_dot.empty else 28.0
+        v_sm_25 = float(sub_dot_25["sm_rootzone"].mean() * 100) if not sub_dot_25.empty else v_sm
+        d_sm = v_sm - v_sm_25
+        
+        # 5. Sinh khối NDVI đỉnh đợt
+        v_ndvi = float(sub_dot["ndvi"].max()) if not sub_dot.empty else 0.65
+        v_ndvi_25 = float(sub_dot_25["ndvi"].max()) if not sub_dot_25.empty else v_ndvi
+        d_ndvi = v_ndvi - v_ndvi_25
+
+        th = [
+            kpi_the_dot(f"Tmax TB ({len(thangs_dot)}T)", v_tmax, "°C", "#F97316", f"Đỉnh {v_tmax_peak:.1f}°C", d_tmax, "cao", "{:.1f}"),
+            kpi_the_dot(f"Tổng Mưa Cả Đợt", v_mua, "mm", "#0EA5E9", f"Tích lũy {len(thangs_dot)}T", d_mua, "cao", "{:.0f}"),
+            kpi_the_dot(f"Gió Lào Cả Đợt", v_nong, "ngày", "#EF4444", f"≥35°C ({len(thangs_dot)}T)", d_nong, "cao", "{:.0f}"),
+            kpi_the_dot(f"Ẩm Ruộng TB (SMAP)", v_sm, "%", "#10B981", f"Tầng rễ {len(thangs_dot)}T", d_sm, "thap", "{:.0f}"),
+            kpi_the_dot(f"NDVI Đỉnh Mùa Vụ", v_ndvi, "", "#84CC16", f"Sinh khối cực đại", d_ndvi, "thap", "{:.2f}"),
+        ]
+    else:
+        # TÍNH TOÁN THEO TỪNG THÁNG ĐƠN LẺ
+        th = [
+            kpi_the("Nhiệt độ cao nhất", "tmax", "°C", "#F97316", chuoi, thang, "cao", "{:.1f}"),
+            kpi_the("Lượng mưa tích lũy", "mua_mm", "mm", "#0EA5E9", chuoi, thang, "cao"),
+            kpi_the(f"Nắng nóng ≥{E.NGUONG_NONG}°C (Gió Lào)", "nong35", "ngày", "#EF4444", chuoi, thang, "cao"),
+            kpi_the("Độ ẩm ruộng lúa (SMAP)", "sm_rootzone", "%", "#10B981", chuoi, thang, "thap", "{:.0f}", 100),
+            kpi_the("Sinh khối lúa (NDVI)", "ndvi", "", "#84CC16", chuoi, thang, "thap", "{:.2f}"),
+        ]
+
     for col, html in zip(c, th):
         col.markdown(html, unsafe_allow_html=True)
 
