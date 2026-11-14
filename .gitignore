@@ -1,0 +1,19 @@
+# Môi trường ảo (rất nặng, không cần đưa lên)
+.venv1/
+venv/
+env/
+ENV/
+
+# Bỏ dòng data/raw/ đi để nó được đẩy lên Git
+# data/raw/
+
+# Các file cấu hình bí mật (nếu có)
+
+
+# File hệ thống và IDE
+__pycache__/
+*.py[cod]
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
