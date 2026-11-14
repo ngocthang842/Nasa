@@ -123,56 +123,19 @@ def _hien_tab_ngay(df_daily, min_date, max_date, dl, vung):
     with st.container(border=True):
         st.markdown(
             '<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
-            '🔍 Bộ Điều Khiển Thời Gian Tra Cứu Viễn Thám & Khí Tượng Yên Thành (2018–2026):'
+            '🔍 Chọn Ngày Cần Tra Cứu Viễn Thám & Khí Tượng Yên Thành (2018–2026):'
             '</div>'
             '<div style="font-size:11.5px; color:#64748B; margin-bottom:10px;">'
             f'Kho dữ liệu tích hợp liên tục 3.237 ngày từ {min_date.strftime("%d/%m/%Y")} đến {max_date.strftime("%d/%m/%Y")}. '
-            'Bấm chọn Năm hoặc Tháng bên dưới để chuyển thời gian khảo sát ngay lập tức, hoặc chọn Ngày cụ thể.'
+            'Chọn hoặc gõ trực tiếp ngày cần tra cứu, hoặc bấm các sự kiện lịch sử để xem nhanh.'
             '</div>',
             unsafe_allow_html=True,
         )
 
-        # 1. BỘ CHỌN NHANH NĂM & THÁNG TRỰC QUAN (1 CLICK LÀ CHUYỂN NGAY SANG THÁNG KHÁC)
-        col_y_sel, col_m_sel = st.columns([3.2, 8.8], gap="small")
-        with col_y_sel:
-            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">📅 CHỌN NĂM KHẢO SÁT:</div>', unsafe_allow_html=True)
-            danh_sach_nam = sorted(df_daily["year"].unique(), reverse=True)
-            idx_y = danh_sach_nam.index(cur_d.year) if cur_d.year in danh_sach_nam else 0
-            sel_y = st.selectbox(
-                "Năm tra cứu:",
-                options=danh_sach_nam,
-                index=idx_y,
-                key="sel_y_quick_tab_ngay",
-                label_visibility="collapsed",
-                help="Chọn năm trong chuỗi dữ liệu 9 năm NASA (2018–2026)",
-            )
-            if sel_y and sel_y != cur_d.year:
-                ngay_moi = _tinh_ngay_hop_le(sel_y, cur_d.month, cur_d.day, min_date, max_date)
-                st.session_state["chuyen_ngay_den"] = ngay_moi
-                st.rerun()
-
-        with col_m_sel:
-            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">🌿 CHỌN THÁNG (BẤM ĐỂ ĐỔI THÁNG NGAY):</div>', unsafe_allow_html=True)
-            sel_m = st.pills(
-                "Tháng tra cứu:",
-                options=list(range(1, 13)),
-                default=cur_d.month,
-                format_func=lambda m: f"T{m} {ICON_THANG.get(m, '')}",
-                key="pills_m_quick_tab_ngay",
-                label_visibility="collapsed",
-                help="Bấm vào tháng bất kỳ để chuyển ngày khảo sát ngay lập tức",
-            )
-            if sel_m and sel_m != cur_d.month:
-                ngay_moi = _tinh_ngay_hop_le(cur_d.year, sel_m, cur_d.day, min_date, max_date)
-                st.session_state["chuyen_ngay_den"] = ngay_moi
-                st.rerun()
-
-        st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
-
-        # 2. Ô CHỌN NGÀY CỤ THỂ VÀ GỢI Ý LỊCH SỬ NHANH
+        # Ô CHỌN NGÀY CỤ THỂ VÀ GỢI Ý LỊCH SỬ NHANH
         col_d1, col_d2, col_d3 = st.columns([3.8, 4.4, 3.8], gap="small")
         with col_d1:
-            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">📆 HOẶC CHỌN NGÀY CỤ THỂ:</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">📅 CHỌN NGÀY CỤ THỂ:</div>', unsafe_allow_html=True)
             ngay_chon = st.date_input(
                 "Chọn ngày:",
                 value=cur_d,
