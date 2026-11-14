@@ -108,7 +108,7 @@ CAY = {
 }
 
 CAY_VUNG = {
-    "Yên Thành": ["Lúa", "Lạc", "Ngô", "Rau màu vụ đông"],
+    "Yên Thành": ["Lúa"],
 }
 
 VUNG = {
@@ -116,10 +116,7 @@ VUNG = {
 }
 
 GIOI_THIEU = [
-    ("Yên Thành", "Lúa", "Vựa lúa trọng điểm số 1 của Nghệ An, hệ thống kênh mương thủy lợi Ba Ra Đô Lương hoàn chỉnh."),
-    ("Yên Thành", "Lạc", "Cây họ đậu luân canh với lúa giúp đất màu mỡ, cắt đứt nguồn bệnh đạo ôn trên chân ruộng."),
-    ("Yên Thành", "Ngô", "Cây trồng vụ đông truyền thống tạo nguồn thức ăn chăn nuôi sau thu hoạch lúa hè thu."),
-    ("Yên Thành", "Rau màu vụ đông", "Mô hình thâm canh rau màu vụ đông đem lại thu nhập cao trên đất lúa 2 vụ."),
+    ("Yên Thành", "Lúa", "Vựa lúa trọng điểm số 1 của Nghệ An, chuyên canh 100% thuần lúa nước 2 vụ/năm kết hợp cày phơi ải hoàn nguyên đất."),
 ]
 
 # Các phương án đợt mùa vụ cho vựa lúa Yên Thành
@@ -533,12 +530,10 @@ def danh_gia_ke_hoach_nam(cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map):
     muc_nam = "An toàn cao" if rui_ro_tb_nam < 35 else ("Trung bình" if rui_ro_tb_nam < 55 else "Cần theo dõi sát")
 
     khuyen_nghi_tong = []
-    if so_vu_lua == 2 and co_cay_dau:
-        khuyen_nghi_tong.append("🌟 **Công thức vàng luân canh Yên Thành:** Lúa xuân – Lúa hè thu – Cây họ đậu (Lạc). Vừa tối ưu năng suất lúa, vừa cải tạo đất tự nhiên.")
-    elif so_vu_lua == 2:
-        khuyen_nghi_tong.append("🌾 **Cơ cấu 2 vụ lúa thuần thục:** Đảm bảo thời vụ gieo cấy lúa hè thu sớm để gặt trước 15-20/9, tránh lũ lụt tiểu mãn.")
-    if not co_cay_dau and so_vu_lua >= 2:
-        khuyen_nghi_tong.append("💡 **Khuyến nghị bổ sung:** Nên luân canh thêm Lạc hoặc Rau màu vụ đông để bồi dục đất, cắt đứt chu kỳ bệnh đạo ôn và rầy nâu hại lúa.")
+    if so_vu_lua == 2:
+        khuyen_nghi_tong.append("🌾 **Cơ cấu chuẩn 2 vụ thuần lúa nước Yên Thành:** Lúa Chiêm Xuân thâm canh đỉnh cao + Lúa Hè Thu cực ngắn ngày gặt trước 15/9 né lụt Kênh Vách Bắc.")
+    if co_de_ai:
+        khuyen_nghi_tong.append("🚜 **Cày phơi ải hoàn nguyên đất:** Cày lật sâu 18–22 cm phơi nỏ ruộng 30–45 ngày giúp tiêu diệt 85–90% mầm bệnh đạo ôn và giải phóng độc chất hữu cơ.")
 
     return {
         "so_dot": so_dot,

@@ -42,13 +42,13 @@ DEFAULT_DOTS = [
     },
     {
         "id": "dot_3",
-        "ten": "Vụ Đông & Phơi Ải",
+        "ten": "Vụ Đông: Cày Phơi Ải",
         "thangs": [10, 11, 12],
-        "cay": "Ngô / Lạc",
+        "cay": "Cày phơi ải đất",
         "mau": "#0284C7",
         "ic": "🚜",
-        "mota": "Cày sâu phơi nỏ ruộng diệt mầm đạo ôn, xen canh Ngô ngọt, Lạc thu đông, đón nước sông Lam T12.",
-        "nang_suat_tiem_nang": "Bồi dưỡng đất",
+        "mota": "Cày lật sâu 18–22 cm phơi nỏ ruộng diệt 85–90% mầm bệnh đạo ôn, đón nước sông Lam thau chua T12.",
+        "nang_suat_tiem_nang": "Hoàn nguyên đất",
     },
 ]
 
@@ -124,12 +124,12 @@ VIEC_CAN_LAM = {
     10: [
         ("🌾 Việc 1: Cày lật đất phơi ải", "Cày sâu 18–22 cm phơi khô nỏ ruộng lúa 30–45 ngày nhằm diệt mầm nấm bệnh lưu cữu.", "#16A34A", "🟢"),
         ("🌱 Việc 2: Rải vôi khử chua", "Bón 20–25 kg vôi bột/sào để hạ phèn và khử độc chất hữu cơ rơm rạ trong đất.", "#0284C7", "🔵"),
-        ("🥬 Việc 3: Trồng cây vụ đông", "Gieo ngô ngọt, lạc thu đông, rau màu trên các chân đất vàn cao để tăng thu nhập.", "#F59E0B", "🟡"),
+        ("🍂 Việc 3: Rút cạn nước phơi ải", "Nạo vét rãnh thoát nước, tạo điều kiện cho đất ruộng khô nứt chân chim phá vỡ tầng yếm khí.", "#16A34A", "🟢"),
     ],
     11: [
         ("🌾 Việc 1: Tiếp tục phơi ải đất", "Giữ ruộng khô nỏ, tận dụng ánh nắng hanh heo tiêu diệt bào tử đạo ôn và ấu trùng rầy.", "#16A34A", "🟢"),
         ("💧 Việc 2: Nạo vét Kênh Ba Ra", "Phát động toàn dân ra quân nạo vét bùn đất Kênh chính và hệ thống cống nội đồng.", "#0284C7", "🔵"),
-        ("🥬 Việc 3: Chăm sóc rau vụ đông", "Tưới nước đủ ẩm và bón phân hữu cơ sinh học cho diện tích rau màu vụ đông.", "#16A34A", "🟢"),
+        ("🍂 Việc 3: Kiểm tra đất nỏ ải", "Đánh giá tầng đất canh tác đã oxy hóa giải phóng Fe2+, H2S để chuẩn bị đón nước đổ ải.", "#16A34A", "🟢"),
     ],
     12: [
         ("🌾 Việc 1: Chuẩn bị giống lúa xuân", "Chuẩn bị giống lúa thuần chất lượng cao: ST25, J02, TBR225, Bắc Thịnh, ngâm ủ đúng kỹ thuật.", "#0284C7", "🔵"),

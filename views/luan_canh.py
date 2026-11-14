@@ -377,7 +377,7 @@ def _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_ca
         )
         phuong_an_dong = st.selectbox(
             "Phương án vụ đông:",
-            ["Cày lật đất phơi nỏ ải 100%", "Phơi ải 70% + Trồng Ngô ngọt 30%"],
+            ["Cày lật đất phơi nỏ ải 100% (Hoàn nguyên đất)", "Phơi ải sâu 20cm + Bón vôi khử chua pH 5.6"],
             index=0,
             key=f"sel_phuong_an_dong_{nam}",
             label_visibility="collapsed",

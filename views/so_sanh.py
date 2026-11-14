@@ -134,7 +134,7 @@ def hien(ctx):
             elif "Đông" in vu_chon:
                 t_start, t_end = 10, 12
                 ten_vu = "Vụ Đông / Cày Ải Đất (T10–T12)"
-                mota_vu = "Giai đoạn cải tạo đất: Cày phơi nỏ ruộng diệt mầm đạo ôn, xen canh Ngô ngọt, Lạc thu đông."
+                mota_vu = "Giai đoạn cải tạo đất: Cày lật sâu 18–22 cm phơi nỏ ruộng 30–45 ngày diệt triệt để nguồn nấm bệnh đạo ôn cho vụ sau."
                 ic_vu = "🍂"
             else:
                 # Tùy chỉnh khoảng tháng
