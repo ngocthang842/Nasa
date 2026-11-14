@@ -168,9 +168,24 @@ def hien(ctx):
 
     danh_gia_nam = E.danh_gia_ke_hoach_nam(cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map)
 
-    # 2. BỘ 4 THẺ SỐ HÓA KPI THUẦN LÚA YÊN THÀNH
-    shi_score = danh_gia_nam.get("diem_suc_khoe_dat", 85)
-    rr_tb = danh_gia_nam.get("rui_ro_tb_nam", 30)
+    # 2. BỘ 4 THẺ SỐ HÓA KPI THUẦN LÚA YÊN THÀNH (ĐỘNG THEO NIÊN VỤ ĐANG CHỌN)
+    sub_y = dl[(dl.year == nam) & (dl.huyen == vung)] if not dl.empty else pd.DataFrame()
+    sub_dong = sub_y[sub_y.month.isin([10, 11, 12])] if not sub_y.empty else pd.DataFrame()
+    sub_ht = sub_y[sub_y.month.isin([6, 7, 8])] if not sub_y.empty else pd.DataFrame()
+
+    nong_ht = float(sub_ht["nong35"].sum()) if (not sub_ht.empty and "nong35" in sub_ht) else 0.0
+    mua_lu = float(sub_y[sub_y.month.isin([9, 10])]["mua_mm"].sum()) if (not sub_y.empty and "mua_mm" in sub_y) else 0.0
+    mua_dong = float(sub_dong["mua_mm"].sum()) if (not sub_dong.empty and "mua_mm" in sub_dong) else 400.0
+    sm_dong = float(sub_dong["sm_rootzone"].mean()) if (not sub_dong.empty and "sm_rootzone" in sub_dong) else 0.30
+
+    # Rủi ro thời tiết khí hậu năm nam (Gió Lào vụ Hè Thu + Mưa lũ thu hoạch T9-10)
+    rr_nam = 15.0 + min(18.0, nong_ht * 0.9) + (10.0 if mua_lu > 1000 else (6.0 if mua_lu > 700 else (3.0 if mua_lu > 400 else 0.0)))
+    rr_nam = int(round(min(55.0, max(12.0, rr_nam))))
+    muc_rr_nam = "An toàn rất cao" if rr_nam < 22 else ("An toàn cao" if rr_nam < 28 else ("Rủi ro trung bình" if rr_nam < 35 else "Cần theo dõi"))
+
+    # Điểm phơi ải & làm sạch đất vụ Đông của năm nam
+    diem_phoi_ai_nam = int(95 - max(0, (mua_dong - 300) / 25) - max(0, (sm_dong - 0.28) * 300))
+    diem_phoi_ai_nam = max(65, min(96, diem_phoi_ai_nam))
 
     col_k1, col_k2, col_k3, col_k4 = st.columns(4, gap="small")
     with col_k1:
@@ -188,9 +203,9 @@ def hien(ctx):
         st.markdown(
             f"""
             <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #D97706; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-              <div style="font-size:11px; font-weight:750; color:#D97706; text-transform:uppercase;">🛡️ RỦI RO THỜI TIẾT KHÍ HẬU</div>
-              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{rr_tb:.0f}% <small style="font-size:13px; color:#64748B;">({danh_gia_nam['muc_rui_ro_nam']})</small></div>
-              <div style="font-size:11px; color:#475569;">Gió Lào T7 & Bão lũ T9 được né tránh</div>
+              <div style="font-size:11px; font-weight:750; color:#D97706; text-transform:uppercase;">🛡️ RỦI RO KHÍ HẬU {nam}</div>
+              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{rr_nam}% <small style="font-size:13px; color:#64748B;">({muc_rr_nam})</small></div>
+              <div style="font-size:11px; color:#475569;">Gió Lào T6–8: <b>{int(nong_ht)} ngày</b> • Mưa: <b>{int(mua_lu)} mm</b></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -210,9 +225,9 @@ def hien(ctx):
         st.markdown(
             f"""
             <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-left:4px solid #8B5CF6; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-              <div style="font-size:11px; font-weight:750; color:#8B5CF6; text-transform:uppercase;">🍂 LÀM SẠCH ĐẤT (PHƠI ẢI)</div>
-              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{shi_score} <small style="font-size:13px; color:#64748B;">/ 100 điểm</small></div>
-              <div style="font-size:11px; color:#16A34A; font-weight:600;">Diệt 85–90% mầm bệnh đạo ôn</div>
+              <div style="font-size:11px; font-weight:750; color:#8B5CF6; text-transform:uppercase;">🍂 LÀM SẠCH ĐẤT (PHƠI ẢI) {nam}</div>
+              <div style="font-size:22px; font-weight:800; color:#0F172A; margin:2px 0;">{diem_phoi_ai_nam} <small style="font-size:13px; color:#64748B;">/ 100 điểm</small></div>
+              <div style="font-size:11px; color:#16A34A; font-weight:600;">SMAP đông: {sm_dong*100:.1f}% • Mưa: {int(mua_dong)} mm</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -231,7 +246,7 @@ def hien(ctx):
         _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map)
 
     with tab2:
-        _hien_tab_dat_thuan_lua(dl, vung, danh_gia_nam)
+        _hien_tab_dat_thuan_lua(dl, vung, nam, danh_gia_nam, diem_phoi_ai_nam, sm_dong, mua_dong)
 
     with tab3:
         _hien_tab_khi_tuong_lua(dl, vung, nam)
@@ -442,8 +457,9 @@ def _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_ca
 # TAB 2: SỨC KHỎE ĐẤT & HOÀN NGUYÊN NHỜ CÀY PHƠI ẢI VỤ ĐÔNG
 # =============================================================================
 
-def _hien_tab_dat_thuan_lua(dl, vung, danh_gia_nam):
-    """Tab 2: Đánh giá khoa học sức khỏe đất từ dữ liệu thổ nhưỡng thực tế Yên Thành (dat.csv & dem_slope_v2.csv)."""
+def _hien_tab_dat_thuan_lua(dl, vung, nam, danh_gia_nam, diem_phoi_ai_nam, sm_dong, mua_dong):
+    """Tab 2: Đánh giá khoa học sức khỏe đất từ dữ liệu thổ nhưỡng thực tế Yên Thành (dat.csv & dem_slope_v2.csv)
+    kết hợp viễn thám độ ẩm đất NASA SMAP động theo niên vụ đang chọn."""
     df_yt = dl[dl.huyen == vung] if not dl.empty else pd.DataFrame()
     r = df_yt.iloc[0] if not df_yt.empty else pd.Series()
 
@@ -455,6 +471,120 @@ def _hien_tab_dat_thuan_lua(dl, vung, danh_gia_nam):
     slope_val = float(r.get("do_doc_do", 6.71)) if pd.notna(r.get("do_doc_do")) else 6.71
     steep_val = float(r.get("ty_le_doc_tren_15", 0.151)) if pd.notna(r.get("ty_le_doc_tren_15")) else 0.151
 
+    # 1. KHỐI GIÁM SÁT VIỄN THÁM ĐỘ ẨM SMAP VÀ ĐIỀU KIỆN PHƠI ẢI NIÊN VỤ ĐANG CHỌN
+    with st.container(border=True):
+        st.markdown(
+            f"""
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
+              <div>
+                <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
+                  🧪 Đánh Giá Sức Khỏe Đất & Giám Sát Độ Ẩm Viễn Thám NASA SMAP — Niên Vụ {nam}
+                </div>
+                <div style="font-size:11.5px; color:#64748B;">
+                  Kết hợp nền tảng thổ nhưỡng thực đo địa phương (dat.csv) và cảm biến viễn thám độ ẩm đất tầng rễ vệ tinh NASA SMAP L4
+                </div>
+              </div>
+              <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:6px; padding:3px 10px; font-size:11.5px; font-weight:750; color:#1D4ED8;">
+                🛰️ Niên Vụ Đang Khảo Sát: {nam}
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # 3 Thẻ Metric Động Vụ Đông Của Năm Được Chọn
+        col_m1, col_m2, col_m3 = st.columns(3, gap="small")
+        with col_m1:
+            st.markdown(
+                f"""
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px 12px;">
+                  <div style="font-size:11px; font-weight:700; color:#0284C7; text-transform:uppercase;">💧 Độ Ẩm Tầng Rễ SMAP Vụ Đông ({nam})</div>
+                  <div style="font-size:19px; font-weight:800; color:#0F172A; margin:2px 0;">{sm_dong*100:.1f}%</div>
+                  <div style="font-size:11px; color:#64748B;">T10–T12 · Ngưỡng phơi nỏ ải: &lt; 30%</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with col_m2:
+            st.markdown(
+                f"""
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px 12px;">
+                  <div style="font-size:11px; font-weight:700; color:#D97706; text-transform:uppercase;">🌧️ Mưa Tích Lũy Vụ Đông ({nam})</div>
+                  <div style="font-size:19px; font-weight:800; color:#0F172A; margin:2px 0;">{int(mua_dong)} mm</div>
+                  <div style="font-size:11px; color:#64748B;">T10–T12 · Khô ráo giúp đất nỏ nứt chân chim</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with col_m3:
+            st.markdown(
+                f"""
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px 12px;">
+                  <div style="font-size:11px; font-weight:700; color:#16A34A; text-transform:uppercase;">🍂 Hiệu Quả Làm Sạch Mầm Bệnh ({nam})</div>
+                  <div style="font-size:19px; font-weight:800; color:#16A34A; margin:2px 0;">{diem_phoi_ai_nam} / 100</div>
+                  <div style="font-size:11px; color:#64748B;">Diệt 85–95% nguồn nấm đạo ôn cho vụ sau</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        # Biểu đồ Diễn biến Độ ẩm đất tầng rễ SMAP 12 tháng của năm nam
+        st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='font-size:12px; font-weight:750; color:#334155; margin-bottom:4px;'>📊 Diễn Biến Độ Ẩm Tầng Rễ Viễn Thám NASA SMAP 12 Tháng Tại Yên Thành (Niên Vụ {nam}):</div>",
+            unsafe_allow_html=True,
+        )
+
+        sub_y = dl[(dl.year == nam) & (dl.huyen == vung)] if not dl.empty else pd.DataFrame()
+        months_x = [f"T{m}" for m in range(1, 13)]
+        sm_vals = []
+        text_vals = []
+        for m in range(1, 13):
+            sub_m = sub_y[sub_y.month == m] if not sub_y.empty else pd.DataFrame()
+            if not sub_m.empty and pd.notna(sub_m["sm_rootzone"].iloc[0]):
+                v = float(sub_m["sm_rootzone"].iloc[0]) * 100
+                sm_vals.append(round(v, 1))
+                text_vals.append(f"{v:.1f}%")
+            else:
+                sm_vals.append(None)
+                text_vals.append("—")
+
+        bar_colors = ["#0284C7" if m not in [10, 11, 12] else "#D97706" for m in range(1, 13)]
+
+        fig_sm = go.Figure()
+        fig_sm.add_trace(go.Bar(
+            x=months_x,
+            y=sm_vals,
+            marker=dict(color=bar_colors, line=dict(color="#0F172A", width=0.5)),
+            text=text_vals,
+            textposition="outside",
+            cliponaxis=False,
+            name=f"SMAP {nam} (%)",
+            hovertemplate="Tháng %{x}: Độ ẩm tầng rễ = %{y:.1f}%<extra></extra>",
+        ))
+        fig_sm.add_hline(
+            y=28.0,
+            line_dash="dash",
+            line_color="#DC2626",
+            line_width=1.5,
+            annotation_text="Ngưỡng phơi khô nỏ nứt chân chim (28%)",
+            annotation_position="top right",
+            annotation_font=dict(size=10, color="#DC2626"),
+        )
+        fig_sm.update_layout(
+            height=200,
+            margin=dict(l=10, r=10, t=25, b=10),
+            yaxis=dict(title="Độ ẩm tầng rễ (%)", range=[0, 42], gridcolor="#F1F5F9"),
+            xaxis=dict(gridcolor="#F1F5F9"),
+            plot_bgcolor="#FFFFFF",
+            paper_bgcolor="#FFFFFF",
+            showlegend=False,
+        )
+        ve(fig_sm, che_do="co_dinh")
+        st.caption("💡 *Cột màu xanh: Giai đoạn thâm canh 2 vụ lúa (Xuân & Hè Thu); Cột màu hổ phách: Giai đoạn cày phơi ải hoàn nguyên vụ Đông (Tháng 10–12).*")
+
+    # 2. BẢNG THỔ NHƯỠNG CƠ SỞ ĐỊA CHẤT & 3 NGUYÊN TẮC HOÀN NGUYÊN
+    st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
     col_box1, col_box2 = st.columns([1.1, 0.9], gap="medium")
 
     with col_box1:
@@ -462,10 +592,10 @@ def _hien_tab_dat_thuan_lua(dl, vung, danh_gia_nam):
             st.markdown(
                 """
                 <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:4px;">
-                  🧪 Số Liệu Thổ Nhưỡng Thực Đo Của Yên Thành (data/raw/dat.csv)
+                  📍 1. Cơ Sở Thổ Nhưỡng Địa Chất Tự Nhiên Yên Thành (dat.csv)
                 </div>
-                <div style="font-size:11.5px; color:#64748B; margin-bottom:8px;">
-                  Trích xuất trực tiếp từ cơ sở dữ liệu thổ nhưỡng và độ cao số (DEM) huyện Yên Thành
+                <div style="font-size:11px; color:#64748B; margin-bottom:8px;">
+                  <i>* Đặc tính vật lý thổ nhưỡng cố định của địa chất Yên Thành, đóng vai trò nền tảng không thay đổi theo từng năm.</i>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -515,7 +645,7 @@ def _hien_tab_dat_thuan_lua(dl, vung, danh_gia_nam):
             st.markdown(
                 """
                 <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:8px;">
-                  🌾 3 Nguyên Tắc Vàng Hoàn Nguyên Đất Nhờ Cày Phơi Ải
+                  🌾 2. Ba Nguyên Tắc Vàng Hoàn Nguyên Đất Nhờ Cày Phơi Ải
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -544,10 +674,10 @@ def _hien_tab_dat_thuan_lua(dl, vung, danh_gia_nam):
         f"""
         <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-left:4px solid #16A34A; border-radius:8px; padding:10px 14px; margin-top:8px; font-size:12px; color:#1E293B; display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <b>🌾 Đúc Kết Khoa Học Thổ Nhưỡng:</b> Với pH thực tế <b>{ph_val:.2f}</b>, giàu chất hữu cơ <b>{soc_val:.1f} g/kg</b> và độ dốc chỉ <b>{slope_val:.1f}°</b>, Yên Thành sở hữu điều kiện thổ nhưỡng phù sa cổ hoàn hảo nhất Nghệ An cho thâm canh thuần lúa nước 2 vụ/năm.
+            <b>🌾 Đúc Kết Khoa Học Thổ Nhưỡng Niên Vụ {nam}:</b> Với pH thực tế <b>{ph_val:.2f}</b>, giàu chất hữu cơ <b>{soc_val:.1f} g/kg</b> kết hợp độ ẩm viễn thám SMAP vụ đông đạt <b>{sm_dong*100:.1f}%</b> (mưa tích lũy {int(mua_dong)} mm), đất ruộng Yên Thành trong niên vụ {nam} đạt <b>{diem_phoi_ai_nam}/100 điểm</b> về hiệu quả hoàn nguyên độ phì và diệt mầm nấm bệnh.
           </div>
           <div style="background:#DCFCE7; border:1px solid #86EFAC; border-radius:6px; padding:4px 10px; font-size:12px; font-weight:800; color:#15803D; white-space:nowrap; margin-left:12px;">
-            Điểm Sức Khỏe Đất: {danh_gia_nam.get('diem_suc_khoe_dat', 85)} / 100
+            Điểm Làm Sạch Đất: {diem_phoi_ai_nam} / 100
           </div>
         </div>
         """,
