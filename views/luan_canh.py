@@ -14,6 +14,12 @@ import streamlit as st
 import engine as E
 from views.chung import tieu_de, ve
 
+# Icon chu kỳ nông học 12 tháng lúa Yên Thành
+ICON_THANG = {
+    1: "🌱", 2: "🌿", 3: "🌾", 4: "🌸", 5: "✨",
+    6: "🌱", 7: "🌿", 8: "🌾", 9: "🌊", 10: "🚜", 11: "☀️", 12: "💧"
+}
+
 # DANH MỤC GIỐNG LÚA THUẦN CHỦ LỰC VỰA LÚA YÊN THÀNH
 GIONG_LUA_XUAN = ["ST25 (Gạo ngon thế giới)", "J02 (Lúa Nhật hạt tròn)", "TBR225 (Năng suất đỉnh)", "Bắc Thịnh (Chống rét tốt)"]
 GIONG_LUA_HETHU = ["Khang Dân 18 (Cực ngắn ngày né lũ)", "Đài Thơm 8 (Chịu nhiệt gió Lào)", "BT7 (Chống ngã đổ)", "TBR225"]
