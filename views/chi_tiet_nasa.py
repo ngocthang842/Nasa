@@ -1,11 +1,15 @@
 """Các trang chuyên sâu theo từng chỉ số Viễn thám NASA (NDVI, SMAP, GPM, LST, Công thức, API).
 Thiết kế theo chuẩn Hệ thống Phân tích Môi trường NASA (NEDA) & Vựa lúa Yên Thành (Nghệ An).
-Tối ưu hóa hiển thị: Biểu đồ nâng cao có ngưỡng an toàn, Bảng ma trận số liệu 12 tháng,
-và Chế độ xem Bản đồ Viễn thám & Telemetry Vệ tinh theo yêu cầu (On-Demand).
+Bố cục hiện đại:
+- Hàng 1: Bộ 3 Thẻ KPI, Đánh giá Nông học & Thang đo chuẩn quốc tế
+- Hàng 2: Biểu đồ Chuyên sâu Toàn chiều rộng (Full-Width, Spline Area, Combo Dual-Axis, Bar Chart không đè chữ)
+- Hàng 3: Bảng Ma trận Số liệu Viễn thám 12 Tháng đối chiếu Đa năm (2024–2026)
+- Hàng 4: Bản đồ Viễn thám Không gian & Telemetry 4 Cụm Xã Thâm Canh (On-Demand)
 """
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 
 import engine as E
@@ -14,35 +18,30 @@ from views.ve_tinh import hien_ve_tinh, CUM_XA_YEN_THANH
 from views.chung import tieu_de, ve, kpi_the
 
 
-# -----------------------------------------------------------------------------
-# 1. HÀM VẼ BIỂU ĐỒ NÂNG CAO CÓ NGƯỠNG AN TOÀN CHO CÂY LÚA NƯỚC
-# -----------------------------------------------------------------------------
-def _ve_chuoi_thoi_gian_chuyen_nghiep(
+# =============================================================================
+# 1. CÁC HÀM VẼ BIỂU ĐỒ CHUYÊN SÂU NÂNG CAO (FULL-WIDTH, KHÔNG ĐÈ CHỮ)
+# =============================================================================
+
+def _ve_bieu_do_spline_area(
     df_thang,
     cot,
-    tieu_de_bieu_do,
     mau_chinh,
-    don_vi="",
+    mau_fill,
+    don_vi,
     thang_hien_tai=4,
     nguong_an_toan=None,
     vach_canh_bao=None,
     he_so=1.0,
 ):
-    """Vẽ biểu đồ chuỗi thời gian 12 tháng chuyên nghiệp:
-    - So sánh đa năm (2024, 2025, 2026)
-    - Dải màu ngưỡng sinh trưởng an toàn cho cây lúa nước
-    - Vạch cảnh báo ngưỡng rủi ro
-    - Làm nổi bật tháng hiện tại đang được chọn
-    """
+    """Vẽ biểu đồ Spline Area Chart mềm mại cho NDVI và SMAP."""
     fig = go.Figure()
-    nam_colors = {2026: mau_chinh, 2025: "#0284C7", 2024: "#94A3B8"}
     nam_styles = {
-        2026: dict(width=3.8, dash="solid"),
-        2025: dict(width=2.4, dash="solid"),
-        2024: dict(width=1.8, dash="dot"),
+        2026: dict(width=3.8, color=mau_chinh),
+        2025: dict(width=2.4, color="#0284C7"),
+        2024: dict(width=1.8, color="#94A3B8", dash="dot"),
     }
 
-    # Dải ngưỡng sinh trưởng an toàn (nếu có)
+    # Dải ngưỡng sinh trưởng an toàn
     if nguong_an_toan:
         min_v, max_v, nhan_v = nguong_an_toan
         fig.add_hrect(
@@ -52,21 +51,21 @@ def _ve_chuoi_thoi_gian_chuyen_nghiep(
             line=dict(width=1, dash="dash", color="rgba(34, 197, 94, 0.35)"),
             annotation_text=f"🌿 {nhan_v}",
             annotation_position="top left",
-            annotation_font=dict(size=10.5, color="#15803D"),
+            annotation_font=dict(size=11, color="#15803D"),
         )
 
-    # Vạch cảnh báo rủi ro (nếu có)
+    # Vạch cảnh báo rủi ro
     if vach_canh_bao:
         for vb in vach_canh_bao:
             fig.add_hline(
                 y=vb["val"],
                 line=dict(color=vb.get("color", "#DC2626"), width=1.5, dash="dashdot"),
-                annotation_text=vb.get("label", "Ngưỡng cảnh báo"),
+                annotation_text=vb.get("label", ""),
                 annotation_position="bottom right",
                 annotation_font=dict(size=10.5, color=vb.get("color", "#DC2626")),
             )
 
-    # Vẽ đường số liệu các năm
+    # Đường số liệu đa năm
     for y in sorted(df_thang.year.unique()):
         sub = df_thang[df_thang.year == y].sort_values("month")
         if cot not in sub.columns:
@@ -74,18 +73,20 @@ def _ve_chuoi_thoi_gian_chuyen_nghiep(
         y_data = sub[cot] * he_so
         x_data = [f"T{int(m)}" for m in sub.month]
 
+        is_cur_year = (y == 2026)
         fig.add_scatter(
             x=x_data,
             y=y_data,
-            name=f"Năm {y}",
+            name=f"Năm {y}{' (Kế hoạch)' if is_cur_year else ''}",
             mode="lines+markers",
-            line=dict(color=nam_colors.get(y, "#64748B"), **nam_styles.get(y, {})),
-            marker=dict(size=8 if y == 2026 else 5),
-            text=[f"{v:.1f} {don_vi}".strip() for v in y_data],
-            hovertemplate=f"<b>Năm {y} · %{{x}}</b>: %{{y:.1f}} {don_vi}<extra></extra>",
+            line=dict(shape="spline", smoothing=1.2, **nam_styles.get(y, {})),
+            fill="tozeroy" if is_cur_year else "none",
+            fillcolor=mau_fill if is_cur_year else None,
+            marker=dict(size=9 if is_cur_year else 6, symbol="circle"),
+            hovertemplate=f"<b>Năm {y} · %{{x}}</b>: %{{y:.2f}} {don_vi}<extra></extra>",
         )
 
-    # Đánh dấu tháng hiện tại bằng vạch dọc (dùng add_shape + add_annotation tránh lỗi categorical của Plotly)
+    # Đánh dấu tháng hiện tại (add_shape an toàn cho categorical axis)
     x_cur = f"T{int(thang_hien_tai)}"
     fig.add_shape(
         type="line",
@@ -94,7 +95,7 @@ def _ve_chuoi_thoi_gian_chuyen_nghiep(
         y0=0,
         y1=1,
         yref="paper",
-        line=dict(color="#0F172A", width=1.5, dash="dot"),
+        line=dict(color="#0F172A", width=1.6, dash="dot"),
     )
     fig.add_annotation(
         x=x_cur,
@@ -104,25 +105,28 @@ def _ve_chuoi_thoi_gian_chuyen_nghiep(
         showarrow=False,
         xanchor="center",
         yanchor="bottom",
-        font=dict(size=10, color="#0F172A", weight="bold"),
-        bgcolor="rgba(255, 255, 255, 0.85)",
+        font=dict(size=10.5, color="#0F172A", weight="bold"),
+        bgcolor="rgba(255, 255, 255, 0.9)",
     )
 
     fig.update_layout(
-        title=dict(
-            text=tieu_de_bieu_do,
-            font=dict(size=13.5, family="Be Vietnam Pro", weight="bold", color="#0F172A"),
-        ),
-        height=290,
-        margin=dict(l=8, r=8, t=36, b=8),
+        height=320,
+        margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        legend=dict(orientation="h", y=1.14, x=0, font=dict(size=11)),
-        xaxis=dict(showgrid=True, gridcolor="#F1F5F9", tickfont=dict(size=11)),
+        legend=dict(
+            orientation="h",
+            y=1.12,
+            x=1,
+            xanchor="right",
+            font=dict(size=11),
+            bgcolor="rgba(255,255,255,0.7)",
+        ),
+        xaxis=dict(showgrid=True, gridcolor="#F1F5F9", tickfont=dict(size=11.5)),
         yaxis=dict(
             showgrid=True,
             gridcolor="#F1F5F9",
-            title=dict(text=don_vi, font=dict(size=11)),
+            title=dict(text=don_vi, font=dict(size=11.5)),
             tickfont=dict(size=11),
         ),
         hovermode="x unified",
@@ -130,9 +134,220 @@ def _ve_chuoi_thoi_gian_chuyen_nghiep(
     return fig
 
 
-# -----------------------------------------------------------------------------
-# 2. HÀM RENDER BẢNG MA TRẬN SỐ LIỆU 12 THÁNG (DATA MATRIX TABLE)
-# -----------------------------------------------------------------------------
+def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4):
+    """Vẽ biểu đồ Vũ lượng Mưa GPM IMERG dạng CỘT (Bar Chart) kết hợp đường xu hướng."""
+    fig = go.Figure()
+
+    # Dải mưa an toàn cho lúa
+    fig.add_hrect(
+        y0=50.0,
+        y1=180.0,
+        fillcolor="rgba(34, 197, 94, 0.08)",
+        line=dict(width=1, dash="dash", color="rgba(34, 197, 94, 0.35)"),
+        annotation_text="🌿 Vũ lượng thích hợp vụ lúa (50–180 mm)",
+        annotation_position="top left",
+        annotation_font=dict(size=11, color="#15803D"),
+    )
+
+    # Vạch báo động bão lũ
+    fig.add_hline(
+        y=250.0,
+        line=dict(color="#DC2626", width=1.6, dash="dashdot"),
+        annotation_text="🚨 Ngưỡng báo động ngập úng Kênh Vách Bắc (≥250 mm)",
+        annotation_position="bottom right",
+        annotation_font=dict(size=10.5, color="#DC2626"),
+    )
+
+    # Lấy dữ liệu năm 2026 vẽ Bar Chart
+    sub_2026 = df_thang[df_thang.year == 2026].sort_values("month")
+    if not sub_2026.empty:
+        x_2026 = [f"T{int(m)}" for m in sub_2026.month]
+        y_2026 = sub_2026["mua_mm"].values
+
+        # Đổi màu cột bão lũ (≥250mm) sang đỏ cam
+        bar_colors = ["#DC2626" if v >= 250 else ("#0284C7" if m == thang_hien_tai else "#38BDF8") for m, v in zip(sub_2026.month, y_2026)]
+
+        fig.add_bar(
+            x=x_2026,
+            y=y_2026,
+            name="Vũ lượng 2026 (Kế hoạch)",
+            marker=dict(color=bar_colors, line=dict(color="#0284C7", width=1)),
+            hovertemplate="<b>Năm 2026 · %{x}</b>: %{y:.0f} mm<extra></extra>",
+        )
+
+    # Đường xu hướng năm 2025 và 2024 để đối chiếu
+    nam_styles = {
+        2025: dict(color="#0F766E", width=2.4),
+        2024: dict(color="#94A3B8", width=1.8, dash="dot"),
+    }
+    for y in [2025, 2024]:
+        sub_y = df_thang[df_thang.year == y].sort_values("month")
+        if not sub_y.empty and "mua_mm" in sub_y.columns:
+            fig.add_scatter(
+                x=[f"T{int(m)}" for m in sub_y.month],
+                y=sub_y["mua_mm"],
+                name=f"Năm {y}",
+                mode="lines+markers",
+                line=dict(shape="spline", **nam_styles.get(y, {})),
+                marker=dict(size=6),
+                hovertemplate=f"<b>Năm {y} · %{{x}}</b>: %{{y:.0f}} mm<extra></extra>",
+            )
+
+    # Đánh dấu tháng hiện tại
+    x_cur = f"T{int(thang_hien_tai)}"
+    fig.add_shape(
+        type="line",
+        x0=x_cur,
+        x1=x_cur,
+        y0=0,
+        y1=1,
+        yref="paper",
+        line=dict(color="#0F172A", width=1.6, dash="dot"),
+    )
+    fig.add_annotation(
+        x=x_cur,
+        y=1.02,
+        yref="paper",
+        text=f"T{int(thang_hien_tai)} (Hiện tại)",
+        showarrow=False,
+        xanchor="center",
+        yanchor="bottom",
+        font=dict(size=10.5, color="#0F172A", weight="bold"),
+        bgcolor="rgba(255, 255, 255, 0.9)",
+    )
+
+    fig.update_layout(
+        height=320,
+        margin=dict(l=10, r=10, t=10, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        legend=dict(
+            orientation="h",
+            y=1.12,
+            x=1,
+            xanchor="right",
+            font=dict(size=11),
+            bgcolor="rgba(255,255,255,0.7)",
+        ),
+        xaxis=dict(showgrid=True, gridcolor="#F1F5F9", tickfont=dict(size=11.5)),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="#F1F5F9",
+            title=dict(text="Lượng mưa (mm)", font=dict(size=11.5)),
+            tickfont=dict(size=11),
+        ),
+        hovermode="x unified",
+    )
+    return fig
+
+
+def _ve_bieu_do_nhiet_combo(df_thang, thang_hien_tai=4):
+    """Vẽ biểu đồ COMBO 2 TRỤC Y: Đường Nhiệt độ Tmax (°C) + Cột Số ngày Gió Lào (ngày)."""
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Vạch cảnh báo gió Lào táp bông lúa ≥35°C
+    fig.add_hline(
+        y=35.0,
+        line=dict(color="#DC2626", width=1.6, dash="dashdot"),
+        annotation_text="🔥 Ngưỡng Gió Lào táp phấn hoa lúa (≥35°C)",
+        annotation_position="bottom right",
+        annotation_font=dict(size=10.5, color="#DC2626"),
+        secondary_y=False,
+    )
+
+    # 1. Cột Số ngày Gió Lào (Trục Y phụ - phải)
+    sub_2026 = df_thang[df_thang.year == 2026].sort_values("month")
+    if not sub_2026.empty and "nong35" in sub_2026.columns:
+        fig.add_bar(
+            x=[f"T{int(m)}" for m in sub_2026.month],
+            y=sub_2026["nong35"],
+            name="Số ngày Gió Lào ≥35°C (2026)",
+            marker=dict(color="rgba(251, 146, 60, 0.45)", line=dict(color="#EA580C", width=1)),
+            secondary_y=True,
+            hovertemplate="<b>Năm 2026 · %{x}</b>: %{y:.0f} ngày gió Lào<extra></extra>",
+        )
+
+    # 2. Đường Nhiệt độ Tmax của các năm (Trục Y chính - trái)
+    nam_styles = {
+        2026: dict(width=3.8, color="#EA580C"),
+        2025: dict(width=2.4, color="#0284C7"),
+        2024: dict(width=1.8, color="#94A3B8", dash="dot"),
+    }
+    for y in sorted(df_thang.year.unique()):
+        sub_y = df_thang[df_thang.year == y].sort_values("month")
+        if "tmax" not in sub_y.columns:
+            continue
+        fig.add_scatter(
+            x=[f"T{int(m)}" for m in sub_y.month],
+            y=sub_y["tmax"],
+            name=f"Tmax {y}{' (Kế hoạch)' if y == 2026 else ''}",
+            mode="lines+markers",
+            line=dict(shape="spline", smoothing=1.2, **nam_styles.get(y, {})),
+            marker=dict(size=8 if y == 2026 else 5),
+            secondary_y=False,
+            hovertemplate=f"<b>Nhiệt Tmax {y} · %{{x}}</b>: %{{y:.1f}}°C<extra></extra>",
+        )
+
+    # Đánh dấu tháng hiện tại
+    x_cur = f"T{int(thang_hien_tai)}"
+    fig.add_shape(
+        type="line",
+        x0=x_cur,
+        x1=x_cur,
+        y0=0,
+        y1=1,
+        yref="paper",
+        line=dict(color="#0F172A", width=1.6, dash="dot"),
+    )
+    fig.add_annotation(
+        x=x_cur,
+        y=1.02,
+        yref="paper",
+        text=f"T{int(thang_hien_tai)} (Hiện tại)",
+        showarrow=False,
+        xanchor="center",
+        yanchor="bottom",
+        font=dict(size=10.5, color="#0F172A", weight="bold"),
+        bgcolor="rgba(255, 255, 255, 0.9)",
+    )
+
+    fig.update_layout(
+        height=320,
+        margin=dict(l=10, r=10, t=10, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        legend=dict(
+            orientation="h",
+            y=1.12,
+            x=1,
+            xanchor="right",
+            font=dict(size=11),
+            bgcolor="rgba(255,255,255,0.7)",
+        ),
+        xaxis=dict(showgrid=True, gridcolor="#F1F5F9", tickfont=dict(size=11.5)),
+        hovermode="x unified",
+    )
+    fig.update_yaxes(
+        title_text="Nhiệt độ Tmax (°C)",
+        showgrid=True,
+        gridcolor="#F1F5F9",
+        tickfont=dict(size=11),
+        secondary_y=False,
+    )
+    fig.update_yaxes(
+        title_text="Số ngày Gió Lào (ngày)",
+        showgrid=False,
+        tickfont=dict(size=11),
+        range=[0, 25],
+        secondary_y=True,
+    )
+    return fig
+
+
+# =============================================================================
+# 2. HÀM RENDER BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
+# =============================================================================
+
 def _hien_bang_ma_tran_12_thang(
     df_thang,
     cot,
@@ -147,7 +362,6 @@ def _hien_bang_ma_tran_12_thang(
     years = sorted(df_thang.year.unique())
     all_months = list(range(1, 13))
 
-    # Tạo dict chứa dữ liệu
     data_dict = {}
     for y in years:
         sub = df_thang[df_thang.year == y].set_index("month")
@@ -160,7 +374,6 @@ def _hien_bang_ma_tran_12_thang(
                 row.append(np.nan)
         data_dict[y] = row
 
-    # Xây dựng HTML table hiện đại
     th_cols = "".join(
         f'<th style="padding:6px 4px; text-align:center; font-size:11px; background:{"#0F766E; color:#FFFFFF;" if m == thang_hien_tai else "#F8FAFC; color:#475569;"} border-bottom:2px solid #CBD5E1;">'
         f'T{m}{" ⭐" if m == thang_hien_tai else ""}'
@@ -188,7 +401,6 @@ def _hien_bang_ma_tran_12_thang(
         nhan_nam = f"<b>Năm {y}</b> {'(Kế hoạch)' if is_plan else ''}"
         rows_html += f'<tr><td style="padding:7px 8px; font-size:11.5px; color:#1E293B; background:#F8FAFC; border-bottom:1px solid #E2E8F0;">{nhan_nam}</td>{tds}{td_tb}</tr>'
 
-    # Hàng đánh giá trạng thái nông vụ nếu có hàm đánh giá
     row_danh_gia = ""
     if danh_gia_fn and 2026 in data_dict:
         td_dg = ""
@@ -209,9 +421,9 @@ def _hien_bang_ma_tran_12_thang(
         row_danh_gia = f'<tr><td style="padding:6px 8px; font-size:11px; font-weight:750; color:#475569; background:#F8FAFC; border-bottom:1px solid #E2E8F0;">Đánh giá Vụ Lúa</td>{td_dg}<td style="background:#F1F5F9; border-bottom:1px solid #E2E8F0;"></td></tr>'
 
     html_table = f"""
-    <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:10px; overflow-x:auto; margin-top:10px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+    <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:10px; overflow-x:auto; margin-top:12px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
       <div style="padding:10px 14px; border-bottom:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
-        <div style="font-size:12.5px; font-weight:800; color:#0F172A;">
+        <div style="font-size:13px; font-weight:800; color:#0F172A;">
           📋 Bảng Ma trận Số liệu Viễn thám 12 Tháng ({don_vi}) · Đối chiếu Đa năm Yên Thành
         </div>
         <div style="font-size:11px; color:#0F766E; font-weight:700;">
@@ -236,13 +448,12 @@ def _hien_bang_ma_tran_12_thang(
     st.markdown(html_table, unsafe_allow_html=True)
 
 
-# -----------------------------------------------------------------------------
+# =============================================================================
 # 3. HÀM HIỂN THỊ KHU VỰC BẢN ĐỒ VỆ TINH THEO YÊU CẦU (ON-DEMAND INTERACTIVE)
-# -----------------------------------------------------------------------------
+# =============================================================================
+
 def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
-    """Khu vực tương tác Bản đồ Viễn thám:
-    Mặc định hiển thị Card Tóm tắt Trạng thái 4 Cụm Xã & Nút bấm 'Xem Chi tiết trên Bản đồ'.
-    Khi người dùng bấm vào, bung ra Bản đồ Vệ tinh NASA Folium + Telemetry 4 Cụm Xã."""
+    """Khu vực tương tác Bản đồ Viễn thám & Telemetry 4 Cụm Xã."""
     nam = ctx["nam"]
     thang = ctx.get("thang", 4)
     session_key = f"hien_ban_do_{cot_id}_{nam}_{thang}"
@@ -264,7 +475,7 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
                       Bản đồ Viễn thám Không gian Vệ tinh & Telemetry 4 Cụm Xã Thâm Canh
                     </div>
                     <div style="font-size:11.5px; color:#64748B; margin-top:1px;">
-                      Giám sát tọa độ thực địa tại Cụm Bắc (Đô Thành), Lòng chảo, Cụm Nam (Bảo Thành) và Cụm Tây (Mỹ Thành)
+                      Giám sát không gian thực địa tại Cụm Bắc (Đô Thành), Lòng chảo, Cụm Nam (Bảo Thành) và Cụm Tây (Mỹ Thành)
                     </div>
                   </div>
                 </div>
@@ -279,7 +490,6 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
                 st.rerun()
 
         if st.session_state[session_key]:
-            # Đã click mở: Hiển thị Bản đồ Vệ tinh Folium và Telemetry chi tiết
             st.markdown(
                 f'<div style="font-size:12px; font-weight:700; color:#0284C7; margin:8px 0 4px 0;">'
                 f'🛰️ Đang hiển thị bản đồ viễn thám lớp: <b>{ten_lop}</b> · Tháng {thang}/{nam}'
@@ -317,7 +527,6 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
                         unsafe_allow_html=True,
                     )
         else:
-            # Chưa click mở: Hiển thị thẻ tóm tắt thanh lịch với nút xem chi tiết
             cols_preview = st.columns(4, gap="small")
             for i, c in enumerate(CUM_XA_YEN_THANH):
                 with cols_preview[i]:
@@ -348,74 +557,95 @@ def hien_ndvi(ctx):
 
     # Đánh giá giai đoạn lúa theo tháng
     giai_doan_dict = {
-        1:  ("🌱 Mạ non & Cấy lúa Xuân",           "NDVI thấp (0.2–0.3), ruộng ngập nước mạ mới bén."),
+        1:  ("🌱 Mạ non & Cấy lúa Xuân",           "NDVI thấp (0.2–0.3), ruộng ngập nước mạ mới bén rễ."),
         2:  ("🌿 Đẻ nhánh rộ",                      "NDVI tăng nhanh (0.45–0.60), sinh khối lá phát triển mạnh."),
-        3:  ("🌾 Làm đòng & Ôm bòng",               "NDVI đạt đỉnh cao (0.70–0.85), thảm phủ xanh kín mặt ruộng."),
-        4:  ("🌸 Trỗ bông rộ",                       "NDVI duy trì mức cao (0.65–0.78), lúa bắt đầu vào mẩy."),
-        5:  ("✨ Chín vàng & Thu hoạch",             "NDVI giảm (0.35–0.50) do lá vàng và gặt rơm rạ."),
-        6:  ("🌱 Xuống giống Hè Thu",                "NDVI thấp (0.2–0.35), cấy chạy lũ tiểu mãn."),
-        7:  ("🌿 Đẻ nhánh Hè Thu",                  "NDVI tăng nhanh (0.50–0.65) vượt đỉnh nhiệt gió Lào."),
-        8:  ("🌾 Làm đòng & Trỗ Hè Thu",            "NDVI đạt 0.70–0.80 trước mùa bão."),
-        9:  ("🌊 Gặt né lũ & Ngập Kênh Vách Bắc",  "NDVI giảm nhanh sau khi gặt chạy lũ."),
-        10: ("🚜 Cày ải đất & Rau màu vụ đông",     "NDVI vùng lúa thấp (0.25), vùng ngô/lạc đạt 0.55."),
-        11: ("☀️ Phơi nỏ ruộng vụ đông",            "Đất khô ải, chuẩn bị lấy nước."),
-        12: ("💧 Lấy nước đổ ải vụ xuân",           "Ruộng đầy nước phù sa sông Lam."),
+        3:  ("🌾 Làm đòng & Ôm bòng",               "NDVI đạt đỉnh cao (0.70–0.85), thảm lá xanh kín mặt ruộng."),
+        4:  ("🌸 Trỗ bông rộ",                       "NDVI duy trì mức cao (0.65–0.78), lúa thụ phấn vào hạt mẩy."),
+        5:  ("✨ Chín vàng & Thu hoạch",             "NDVI giảm (0.35–0.50) do lá vàng rực và gặt rơm rạ."),
+        6:  ("🌱 Xuống giống Hè Thu",                "NDVI thấp (0.2–0.35), gieo cấy chạy lũ tiểu mãn."),
+        7:  ("🌿 Đẻ nhánh Hè Thu",                  "NDVI tăng (0.50–0.65), vượt đỉnh nắng nóng gió Lào."),
+        8:  ("🌾 Làm đòng & Trỗ Hè Thu",            "NDVI đạt 0.70–0.80 trước khi bão lũ đổ bộ."),
+        9:  ("🌊 Gặt né lũ & Mưa ngập Kênh Vách Bắc", "NDVI giảm nhanh sau khi gặt chạy lũ."),
+        10: ("🚜 Cày ải đất & Rau màu vụ đông",     "NDVI vùng lúa thấp (0.25), vùng cày ải đất phơi nỏ."),
+        11: ("☀️ Phơi nỏ ruộng vụ đông",            "Đất khô ải diệt mầm bệnh, tích tụ dinh dưỡng."),
+        12: ("💧 Lấy nước đổ ải vụ xuân",           "Ruộng đầy nước phù sa Ba Ra Đô Lương dẫn về."),
     }
     gd_ten, gd_mota = giai_doan_dict.get(thang, ("Giai đoạn sinh trưởng lúa", "Giám sát viễn thám"))
 
-    # HÀNG 1: THẺ KPI & THANG ĐO
-    c1, c2, c3 = st.columns([3.2, 5.2, 3.6])
+    # HÀNG 1: BỘ 3 THẺ KPI, GIAI ĐOẠN & THANG ĐO
+    c1, c2, c3 = st.columns([3.4, 4.4, 4.2], gap="small")
     with c1, st.container(border=True):
         st.markdown(
             f"""
-            <div style="font-size:12px; font-weight:750; color:#64748B;">CHỈ SỐ NDVI MODIS</div>
-            <div style="font-size:32px; font-weight:800; color:#16A34A; line-height:1.1;">{cur_ndvi:.2f}</div>
-            <div style="font-size:12px; color:#475569; margin-top:4px;"><b>Tháng {thang}/{nam}</b> · Vựa lúa Yên Thành</div>
-            <hr style="margin:8px 0; border-color:#E2E8F0;">
-            <div style="font-size:12px; color:#1E293B;"><b>{gd_ten}</b></div>
-            <div style="font-size:11px; color:#64748B; margin-top:2px;">{gd_mota}</div>
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">CHỈ SỐ NDVI MODIS</div>
+            <div style="font-size:34px; font-weight:800; color:#16A34A; line-height:1.1; margin:2px 0;">{cur_ndvi:.2f}</div>
+            <div style="font-size:12px; color:#475569;"><b>Tháng {thang}/{nam}</b> · Vựa lúa Yên Thành</div>
+            <div style="font-size:11px; color:#15803D; font-weight:700; margin-top:4px;">
+              {'🟢 Sinh khối lá đạt chuẩn tối hảo' if cur_ndvi >= 0.65 else '🟡 Sinh khối trung bình'}
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
     with c2, st.container(border=True):
-        # Biểu đồ chuỗi thời gian NDVI nâng cao có ngưỡng sinh khối tốt
-        fig_ndvi = _ve_chuoi_thoi_gian_chuyen_nghiep(
-            dl_yt,
-            cot="ndvi",
-            tieu_de_bieu_do="Biểu đồ Chuỗi 12 Tháng NDVI MODIS (Đa năm 2024–2026)",
-            mau_chinh="#16A34A",
-            don_vi="NDVI",
-            thang_hien_tai=thang,
-            nguong_an_toan=(0.60, 0.85, "Sinh khối lúa tốt (0.60–0.85)"),
-            vach_canh_bao=[dict(val=0.40, label="Ngưỡng mạ/đất ải (0.40)", color="#EAB308")],
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">CHU KỲ SINH TRƯỞNG LÚA</div>
+            <div style="font-size:16px; font-weight:800; color:#0F172A; margin:3px 0;">{gd_ten}</div>
+            <div style="font-size:11.5px; color:#475569; line-height:1.35;">{gd_mota}</div>
+            """,
+            unsafe_allow_html=True,
         )
-        ve(fig_ndvi, che_do="tuong_tac")
 
     with c3, st.container(border=True):
         st.markdown(
             """
-            <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:6px;">🔬 Thang Đo Sức Khỏe Lúa NDVI</div>
-            <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
-              <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; padding:6px 10px; border-radius:6px;">
-                <b>🟢 NDVI > 0.70:</b> Lúa trỗ đều, sinh khối khỏe, tán lá xanh kín mặt ruộng.
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase; margin-bottom:4px;">QUY CHUẨN SINH KHỐI NDVI</div>
+            <div style="display:flex; flex-direction:column; gap:4px; font-size:11px;">
+              <div style="background:#F0FDF4; border-left:3.5px solid #16A34A; padding:3px 8px; border-radius:4px;">
+                <b>🟢 NDVI ≥ 0.65:</b> Trỗ đều, sinh khối khỏe, phủ kín mặt ruộng.
               </div>
-              <div style="background:#FEFCE8; border:1px solid #FEF08A; border-left:4px solid #EAB308; padding:6px 10px; border-radius:6px;">
-                <b>🟡 NDVI 0.40–0.70:</b> Giai đoạn mạ non hoặc lúa bắt đầu chín vào hạt.
+              <div style="background:#FEFCE8; border-left:3.5px solid #EAB308; padding:3px 8px; border-radius:4px;">
+                <b>🟡 NDVI 0.40–0.65:</b> Giai đoạn mạ non hoặc lúa bắt đầu chín hạt.
               </div>
-              <div style="background:#FEF2F2; border:1px solid #FECACA; border-left:4px solid #EF4444; padding:6px 10px; border-radius:6px;">
-                <b>🔴 NDVI < 0.40:</b> Đất phơi ải, ruộng trũng ngập úng hoặc bị hạn táp lá.
+              <div style="background:#FEF2F2; border-left:3.5px solid #EF4444; padding:3px 8px; border-radius:4px;">
+                <b>🔴 NDVI < 0.40:</b> Đất phơi ải, ngập úng hoặc bị táp lá do gió Lào.
               </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # HÀNG 2: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
+    # HÀNG 2: BIỂU ĐỒ SPLINE AREA TOÀN CHIỀU RỘNG (FULL WIDTH)
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
+                📈 Chuỗi Thời Gian 12 Tháng Chỉ Số NDVI MODIS (Đối Chiếu Đa Năm 2024–2026)
+              </div>
+              <div style="font-size:11px; color:#64748B;">Đường cong sinh học sinh khối tán lá lúa nước Yên Thành</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        fig_ndvi = _ve_bieu_do_spline_area(
+            dl_yt,
+            cot="ndvi",
+            mau_chinh="#16A34A",
+            mau_fill="rgba(22, 163, 74, 0.08)",
+            don_vi="NDVI",
+            thang_hien_tai=thang,
+            nguong_an_toan=(0.60, 0.85, "Dải sinh khối tối ưu (0.60–0.85)"),
+            vach_canh_bao=[dict(val=0.40, label="Ngưỡng mạ non/đất ải (0.40)", color="#EAB308")],
+        )
+        ve(fig_ndvi, che_do="tuong_tac")
+
+    # HÀNG 3: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
     def dg_ndvi(val, m):
-        if val >= 0.70:
-            return "🟢 Rất tốt", "#DCFCE7", "#15803D"
-        elif val >= 0.50:
+        if val >= 0.65:
+            return "🟢 Tối hảo", "#DCFCE7", "#15803D"
+        elif val >= 0.45:
             return "🟡 Khá", "#FEF9C3", "#A16207"
         else:
             return "⚪ Mạ/Ải", "#F1F5F9", "#475569"
@@ -430,7 +660,7 @@ def hien_ndvi(ctx):
         danh_gia_fn=dg_ndvi,
     )
 
-    # HÀNG 3: KHU VỰC BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
+    # HÀNG 4: BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     _hien_khu_vuc_ban_do_ve_tinh(
         ctx,
@@ -454,60 +684,86 @@ def hien_do_am(ctx):
     r_thang = dl_yt[(dl_yt.year == nam) & (dl_yt.month == thang)]
     cur_sm = float(r_thang["sm_rootzone"].iloc[0] * 100) if not r_thang.empty and "sm_rootzone" in r_thang.columns else 28.0
 
-    # HÀNG 1: THẺ KPI & THANG ĐO
-    c1, c2, c3 = st.columns([3.2, 5.2, 3.6])
+    # HÀNG 1: BỘ 3 THẺ KPI, ĐÁNH GIÁ & THANG ĐO
+    c1, c2, c3 = st.columns([3.4, 4.4, 4.2], gap="small")
     with c1, st.container(border=True):
         muc_am = "Đủ ẩm canh tác" if cur_sm >= 25 else "Thiếu ẩm cần tưới"
         col_am = "#0284C7" if cur_sm >= 25 else "#DC2626"
         st.markdown(
             f"""
-            <div style="font-size:12px; font-weight:750; color:#64748B;">ĐỘ ẨM ĐẤT TẦNG RỄ (SMAP)</div>
-            <div style="font-size:32px; font-weight:800; color:{col_am}; line-height:1.1;">{cur_sm:.1f}%</div>
-            <div style="font-size:12px; color:#475569; margin-top:4px;"><b>Tháng {thang}/{nam}</b> · {muc_am}</div>
-            <hr style="margin:8px 0; border-color:#E2E8F0;">
-            <div style="font-size:12px; color:#1E293B;"><b>Hệ thống Thủy nông Ba Ra Đô Lương:</b></div>
-            <div style="font-size:11px; color:#64748B; margin-top:2px;">Cung cấp nước tưới tự chảy qua Kênh chính cho 26.500 ha đồng ruộng Yên Thành.</div>
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">ĐỘ ẨM TẦNG RỄ (SMAP)</div>
+            <div style="font-size:34px; font-weight:800; color:{col_am}; line-height:1.1; margin:2px 0;">{cur_sm:.1f}%</div>
+            <div style="font-size:12px; color:#475569;"><b>Tháng {thang}/{nam}</b> · {muc_am}</div>
+            <div style="font-size:11px; color:#0284C7; font-weight:700; margin-top:4px;">
+              {'💧 Nước tưới ổn định từ Ba Ra' if cur_sm >= 25 else '⚠️ Cần dâng nước đệm chống hạn'}
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
     with c2, st.container(border=True):
-        # Biểu đồ chuỗi thời gian SMAP nâng cao có dải ẩm an toàn
-        fig_sm = _ve_chuoi_thoi_gian_chuyen_nghiep(
-            dl_yt,
-            cot="sm_rootzone",
-            tieu_de_bieu_do="Biểu đồ Chuỗi 12 Tháng Độ Ẩm Đất SMAP (Đa năm 2024–2026)",
-            mau_chinh="#0284C7",
-            don_vi="%",
-            thang_hien_tai=thang,
-            nguong_an_toan=(25.0, 35.0, "Dải ẩm tối ưu cho lúa (25%–35%)"),
-            vach_canh_bao=[dict(val=20.0, label="Ngưỡng hạn kiệt (20%)", color="#DC2626")],
-            he_so=100.0,
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">HỆ THỐNG THỦY NÔNG BA RA ĐÔ LƯƠNG</div>
+            <div style="font-size:16px; font-weight:800; color:#0F172A; margin:3px 0;">Cấp nước 26.500 ha Lúa Yên Thành</div>
+            <div style="font-size:11.5px; color:#475569; line-height:1.35;">
+              Nước sông Lam chảy qua Kênh chính cấp ẩm tự chảy. Vùng trũng lòng chảo trữ nước tốt, vùng vàn cao cần trạm bơm dã chiến.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        ve(fig_sm, che_do="tuong_tac")
 
     with c3, st.container(border=True):
         st.markdown(
             """
-            <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:6px;">💧 Điều tiết Nước theo Địa hình Yên Thành</div>
-            <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
-              <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-left:4px solid #0284C7; padding:6px 10px; border-radius:6px;">
-                <b>Vùng Trũng Lòng Chảo (Bảo Thành, Vĩnh Thành):</b> Nguy cơ ngập úng khi mưa lớn dồn về Kênh Vách Bắc.
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase; margin-bottom:4px;">TIÊU CHUẨN ĐỘ ẨM RUỘNG LÚA</div>
+            <div style="display:flex; flex-direction:column; gap:4px; font-size:11px;">
+              <div style="background:#EFF6FF; border-left:3.5px solid #0284C7; padding:3px 8px; border-radius:4px;">
+                <b>🟢 25% – 35%:</b> Đủ ẩm tối hảo cho đẻ nhánh và ôm đòng.
               </div>
-              <div style="background:#FFFBEB; border:1px solid #FDE68A; border-left:4px solid #D97706; padding:6px 10px; border-radius:6px;">
-                <b>Vùng Vàn Cao (Mỹ Thành, Tân Thành):</b> Dốc thoải, dễ mất nước khi có gió Lào, cần tích nước hồ đập.
+              <div style="background:#FFFBEB; border-left:3.5px solid #D97706; padding:3px 8px; border-radius:4px;">
+                <b>🟡 20% – 25%:</b> Chớm thiếu ẩm, cần mở cống tưới luân phiên.
+              </div>
+              <div style="background:#FEF2F2; border-left:3.5px solid #EF4444; padding:3px 8px; border-radius:4px;">
+                <b>🔴 < 20%:</b> Hạn kiệt nứt nẻ chân ruộng, nguy cơ táp lá cao.
               </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # HÀNG 2: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
+    # HÀNG 2: BIỂU ĐỒ SPLINE AREA TOÀN CHIỀU RỘNG (FULL WIDTH)
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
+                💧 Chuỗi 12 Tháng Độ Ẩm Đất Tầng Rễ SMAP (Đối Chiếu Đa Năm 2024–2026)
+              </div>
+              <div style="font-size:11px; color:#64748B;">Đo đạc viễn thám vi ba L-band NASA SMAP (0–100 cm)</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        fig_sm = _ve_bieu_do_spline_area(
+            dl_yt,
+            cot="sm_rootzone",
+            mau_chinh="#0284C7",
+            mau_fill="rgba(2, 132, 199, 0.08)",
+            don_vi="%",
+            thang_hien_tai=thang,
+            nguong_an_toan=(25.0, 35.0, "Dải ẩm tối ưu ruộng lúa (25%–35%)"),
+            vach_canh_bao=[dict(val=20.0, label="Ngưỡng hạn kiệt báo động (20%)", color="#DC2626")],
+            he_so=100.0,
+        )
+        ve(fig_sm, che_do="tuong_tac")
+
+    # HÀNG 3: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
     def dg_sm(val, m):
         if val >= 25.0:
             return "🟢 Đủ ẩm", "#DCFCE7", "#15803D"
         elif val >= 20.0:
-            return "🟡 Thiếu ẩm", "#FEF9C3", "#A16207"
+            return "🟡 Thiếu nhẹ", "#FEF9C3", "#A16207"
         else:
             return "🔴 Hạn kiệt", "#FEE2E2", "#B91C1C"
 
@@ -521,7 +777,7 @@ def hien_do_am(ctx):
         danh_gia_fn=dg_sm,
     )
 
-    # HÀNG 3: KHU VỰC BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
+    # HÀNG 4: BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     _hien_khu_vuc_ban_do_ve_tinh(
         ctx,
@@ -545,52 +801,66 @@ def hien_luong_mua(ctx):
     r_thang = dl_yt[(dl_yt.year == nam) & (dl_yt.month == thang)]
     cur_mua = float(r_thang["mua_mm"].iloc[0]) if not r_thang.empty and "mua_mm" in r_thang.columns else 85.0
 
-    # HÀNG 1: THẺ KPI & THANG ĐO
-    c1, c2, c3 = st.columns([3.2, 5.2, 3.6])
+    # HÀNG 1: BỘ 3 THẺ KPI, CẢNH BÁO & TIÊU ÚNG
+    c1, c2, c3 = st.columns([3.4, 4.4, 4.2], gap="small")
     with c1, st.container(border=True):
         st.markdown(
             f"""
-            <div style="font-size:12px; font-weight:750; color:#64748B;">LƯỢNG MƯA THÁNG (GPM)</div>
-            <div style="font-size:32px; font-weight:800; color:#0284C7; line-height:1.1;">{cur_mua:.0f} <span style="font-size:16px;">mm</span></div>
-            <div style="font-size:12px; color:#475569; margin-top:4px;"><b>Tháng {thang}/{nam}</b> · Đo đạc GPM IMERG</div>
-            <hr style="margin:8px 0; border-color:#E2E8F0;">
-            <div style="font-size:12px; color:#1E293B;"><b>Nguy cơ Lũ Tiểu mãn & Bão:</b></div>
-            <div style="font-size:11px; color:#64748B; margin-top:2px;">Đỉnh mưa lũ tập trung mạnh nhất vào Tháng 9 (300–600 mm). Cần gặt xong lúa hè thu trước 15/9.</div>
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">VŨ LƯỢNG THÁNG (GPM)</div>
+            <div style="font-size:34px; font-weight:800; color:#0284C7; line-height:1.1; margin:2px 0;">{cur_mua:.0f} <span style="font-size:18px;">mm</span></div>
+            <div style="font-size:12px; color:#475569;"><b>Tháng {thang}/{nam}</b> · Đo đạc NASA GPM IMERG</div>
+            <div style="font-size:11px; color:#0284C7; font-weight:700; margin-top:4px;">
+              {'🔴 Cảnh báo ngập úng' if cur_mua >= 250 else ('🟢 Lượng mưa thuận lợi' if cur_mua >= 60 else '🟡 Mùa khô ít mưa')}
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
     with c2, st.container(border=True):
-        # Biểu đồ chuỗi thời gian GPM nâng cao có vạch báo động lũ
-        fig_mua = _ve_chuoi_thoi_gian_chuyen_nghiep(
-            dl_yt,
-            cot="mua_mm",
-            tieu_de_bieu_do="Biểu đồ Vũ lượng 12 Tháng GPM IMERG (Đa năm 2024–2026)",
-            mau_chinh="#0284C7",
-            don_vi="mm",
-            thang_hien_tai=thang,
-            nguong_an_toan=(50.0, 180.0, "Mưa vừa vụ lúa (50–180 mm)"),
-            vach_canh_bao=[dict(val=250.0, label="Ngưỡng báo động ngập úng (250 mm)", color="#DC2626")],
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">CẢNH BÁO BÃO LŨ & NÉ LŨ TIỂU MÃN</div>
+            <div style="font-size:16px; font-weight:800; color:#0F172A; margin:3px 0;">Đỉnh Lũ Lớn Tập Trung Tháng 9–10</div>
+            <div style="font-size:11.5px; color:#475569; line-height:1.35;">
+              Vũ lượng tháng 9 thường vọt lên 350–550 mm. Cần gặt dứt điểm lúa hè thu trước ngày 15/9 để tránh ngập úng lòng chảo.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        ve(fig_mua, che_do="tuong_tac")
 
     with c3, st.container(border=True):
         st.markdown(
             """
-            <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:6px;">🌊 Năng Lực Tiêu Úng Kênh Vách Bắc</div>
-            <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
-              <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; padding:6px 10px; border-radius:6px;">
-                <b>Tháng 1–5 (Mùa khô):</b> Lượng mưa thấp (40–120 mm), phụ thuộc nước tưới Ba Ra Đô Lương.
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase; margin-bottom:4px;">NĂNG LỰC TIÊU ÚNG KÊNH VÁCH BẮC</div>
+            <div style="display:flex; flex-direction:column; gap:4px; font-size:11px;">
+              <div style="background:#F0FDF4; border-left:3.5px solid #16A34A; padding:3px 8px; border-radius:4px;">
+                <b>Tháng 1–5 (Mùa khô):</b> Mưa thấp (40–120 mm), chủ yếu dùng nước tưới Ba Ra.
               </div>
-              <div style="background:#FEF2F2; border:1px solid #FECACA; border-left:4px solid #EF4444; padding:6px 10px; border-radius:6px;">
-                <b>Tháng 9–10 (Mùa lũ lớn):</b> Mưa bão dồn dập, cần mở thông các cống tiêu Kênh Vách Bắc ra biển.
+              <div style="background:#FEF2F2; border-left:3.5px solid #EF4444; padding:3px 8px; border-radius:4px;">
+                <b>Tháng 9–10 (Mùa lũ lớn):</b> Mở toàn bộ cống tiêu Kênh Vách Bắc thoát ra Diễn Châu.
               </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # HÀNG 2: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
+    # HÀNG 2: BIỂU ĐỒ CỘT (BAR CHART) KẾT HỢP ĐƯỜNG XU HƯỚNG
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
+                🌧️ Biểu Đồ Vũ Lượng Mưa Tích Lũy 12 Tháng (Bar Chart NASA GPM IMERG)
+              </div>
+              <div style="font-size:11px; color:#64748B;">Cột màu đỏ cam cảnh báo tháng có nguy cơ bão lũ ngập úng (≥250 mm)</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        fig_mua = _ve_bieu_do_mua_bar(dl_yt, thang_hien_tai=thang)
+        ve(fig_mua, che_do="tuong_tac")
+
+    # HÀNG 3: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
     def dg_mua(val, m):
         if val >= 250.0:
             return "🔴 Mưa bão lũ", "#FEE2E2", "#B91C1C"
@@ -609,7 +879,7 @@ def hien_luong_mua(ctx):
         danh_gia_fn=dg_mua,
     )
 
-    # HÀNG 3: KHU VỰC BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
+    # HÀNG 4: BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     _hien_khu_vuc_ban_do_ve_tinh(
         ctx,
@@ -634,52 +904,67 @@ def hien_nhiet_do(ctx):
     cur_tmax = float(r_thang["tmax"].iloc[0]) if not r_thang.empty and "tmax" in r_thang.columns else 32.5
     cur_nong = int(r_thang["nong35"].iloc[0]) if not r_thang.empty and "nong35" in r_thang.columns else 5
 
-    # HÀNG 1: THẺ KPI & THANG ĐO
-    c1, c2, c3 = st.columns([3.2, 5.2, 3.6])
+    # HÀNG 1: BỘ 3 THẺ KPI, NGUY CƠ & MỆNH LỆNH CHỐNG HẠN
+    c1, c2, c3 = st.columns([3.4, 4.4, 4.2], gap="small")
     with c1, st.container(border=True):
+        col_t = "#DC2626" if cur_tmax >= 35 else "#EA580C"
         st.markdown(
             f"""
-            <div style="font-size:12px; font-weight:750; color:#64748B;">NHIỆT ĐỘ TMAX & GIÓ LÀO</div>
-            <div style="font-size:32px; font-weight:800; color:#EA580C; line-height:1.1;">{cur_tmax:.1f}° <span style="font-size:16px;">C</span></div>
-            <div style="font-size:12px; color:#DC2626; font-weight:700; margin-top:4px;">🔥 Có {cur_nong} ngày Gió Lào ≥35°C (Tháng {thang})</div>
-            <hr style="margin:8px 0; border-color:#E2E8F0;">
-            <div style="font-size:12px; color:#1E293B;"><b>Tác động đến Vụ Lúa Yên Thành:</b></div>
-            <div style="font-size:11px; color:#64748B; margin-top:2px;">Gió Lào khô nóng làm táp phấn lúa trỗ bông tháng 4–5 và hạn hán vụ hè thu tháng 6–7.</div>
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">NHIỆT ĐỘ TMAX & GIÓ LÀO</div>
+            <div style="font-size:34px; font-weight:800; color:{col_t}; line-height:1.1; margin:2px 0;">{cur_tmax:.1f}° <span style="font-size:18px;">C</span></div>
+            <div style="font-size:12px; color:#DC2626; font-weight:700;">🔥 Có {cur_nong} ngày Gió Lào ≥35°C (Tháng {thang})</div>
+            <div style="font-size:11px; color:#475569; margin-top:2px;">
+              {'⚠️ Nguy cơ táp phấn bông lúa rất cao' if cur_tmax >= 35 else '🟢 Nhiệt độ trong ngưỡng kiểm soát'}
+            </div>
             """,
             unsafe_allow_html=True,
         )
 
     with c2, st.container(border=True):
-        # Biểu đồ chuỗi thời gian Tmax nâng cao có vạch báo nhiệt táp lúa
-        fig_tmax = _ve_chuoi_thoi_gian_chuyen_nghiep(
-            dl_yt,
-            cot="tmax",
-            tieu_de_bieu_do="Biểu đồ Nhiệt độ Tmax 12 Tháng Đối chiếu Đa năm (2024–2026)",
-            mau_chinh="#EA580C",
-            don_vi="°C",
-            thang_hien_tai=thang,
-            nguong_an_toan=(22.0, 32.0, "Nhiệt độ tối hảo cho lúa (22°C–32°C)"),
-            vach_canh_bao=[dict(val=35.0, label="Ngưỡng Gió Lào táp bông (≥35°C)", color="#DC2626")],
+        st.markdown(
+            f"""
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">HIỆU ỨNG PHƠN TÂY NAM (GIÓ LÀO)</div>
+            <div style="font-size:16px; font-weight:800; color:#0F172A; margin:3px 0;">Đỉnh Nhiệt Gió Lào Tháng 5–7</div>
+            <div style="font-size:11.5px; color:#475569; line-height:1.35;">
+              Gió Lào vượt dãy Trường Sơn làm độ ẩm không khí tụt dưới 40%, bốc thoát hơi nước cực mạnh làm khô đầu lá và táp phấn lúa trỗ.
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        ve(fig_tmax, che_do="tuong_tac")
 
     with c3, st.container(border=True):
         st.markdown(
             """
-            <div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:6px;">🛡️ Mệnh Lệnh Canh Tác Chống Nóng</div>
-            <div style="display:flex; flex-direction:column; gap:6px; font-size:11.5px;">
-              <div style="background:#FFF7ED; border:1px solid #FFEDD5; border-left:4px solid #EA580C; padding:6px 10px; border-radius:6px;">
-                <b>Giữ Mực Nước Đệm 3–5 cm:</b> Dâng nước làm mát gốc lúa, hạ nhiệt vi khí hậu ruộng đồng khi gió Lào thổi mạnh.
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase; margin-bottom:4px;">MỆNH LỆNH NÔNG VỤ CHỐNG NÓNG</div>
+            <div style="display:flex; flex-direction:column; gap:4px; font-size:11px;">
+              <div style="background:#FFF7ED; border-left:3.5px solid #EA580C; padding:3px 8px; border-radius:4px;">
+                <b>Dâng Nước Đệm 3–5 cm:</b> Giữ nước mặt ruộng điều hòa vi khí hậu gốc lúa.
               </div>
-              <div style="background:#FEF2F2; border:1px solid #FECACA; border-left:4px solid #EF4444; padding:6px 10px; border-radius:6px;">
-                <b>Tuyệt Đối Không Phun Thuốc Buổi Trưa:</b> Phun vào sáng sớm hoặc chiều mát tránh bốc hơi và cháy lá.
+              <div style="background:#FEF2F2; border-left:3.5px solid #EF4444; padding:3px 8px; border-radius:4px;">
+                <b>Không Phun Thuốc Buổi Trưa:</b> Tránh bốc hơi hóa chất và cháy lá non.
               </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # HÀNG 2: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
+    # HÀNG 2: BIỂU ĐỒ COMBO DUAL-AXIS (ĐƯỜNG NHIỆT ĐỘ + CỘT NGÀY GIÓ LÀO)
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
+                🌡️ Biểu Đồ Tương Quan: Nhiệt Độ Tmax & Tần Suất Gió Lào (Combo Dual-Axis Chart)
+              </div>
+              <div style="font-size:11px; color:#64748B;">Trục trái: Nhiệt độ cực đại Tmax (°C) · Trục phải: Số ngày Gió Lào ≥35°C (ngày)</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        fig_tmax = _ve_bieu_do_nhiet_combo(dl_yt, thang_hien_tai=thang)
+        ve(fig_tmax, che_do="tuong_tac")
+
+    # HÀNG 3: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
     def dg_tmax(val, m):
         if val >= 35.0:
             return "🔴 Nắng nóng táp", "#FEE2E2", "#B91C1C"
@@ -700,7 +985,7 @@ def hien_nhiet_do(ctx):
         danh_gia_fn=dg_tmax,
     )
 
-    # HÀNG 3: KHU VỰC BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
+    # HÀNG 4: BẢN ĐỒ VIỄN THÁM THEO YÊU CẦU
     st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
     _hien_khu_vuc_ban_do_ve_tinh(
         ctx,
