@@ -14,6 +14,7 @@ from views.chung import CSS, NASA_LOGO_SVG
 from views import (
     ban_do,
     chi_tiet_nasa,
+    du_bao_nang_suat,
     du_lieu,
     ho_so_yen_thanh,
     luan_canh,
@@ -25,6 +26,7 @@ ban_do = importlib.reload(ban_do)
 ve_tinh = importlib.reload(ve_tinh)
 du_lieu = importlib.reload(du_lieu)
 luan_canh = importlib.reload(luan_canh)
+du_bao_nang_suat = importlib.reload(du_bao_nang_suat)
 so_sanh = importlib.reload(so_sanh)
 tong_quan = importlib.reload(tong_quan)
 ho_so_yen_thanh = importlib.reload(ho_so_yen_thanh)
@@ -44,6 +46,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 DANH_MUC = [
     "📊  Bảng điều khiển",
     "🌾  Kế hoạch Luân canh & Sức khỏe Đất",
+    "🎯  Thời vụ & Dự báo Năng suất 2027",
     "📈  So sánh Lịch sử các năm",
     "🗺️  Bản đồ & Vệ tinh NASA",
     "🍃  Phân tích Thảm thực vật (NDVI)",
@@ -57,6 +60,7 @@ DANH_MUC = [
 TRANG = {
     "📊  Bảng điều khiển": tong_quan.hien,
     "🌾  Kế hoạch Luân canh & Sức khỏe Đất": luan_canh.hien,
+    "🎯  Thời vụ & Dự báo Năng suất 2027": du_bao_nang_suat.hien,
     "📈  So sánh Lịch sử các năm": so_sanh.hien,
     "🗺️  Bản đồ & Vệ tinh NASA": ho_so_yen_thanh.hien,
     "🍃  Phân tích Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
