@@ -611,7 +611,7 @@ def hien(ctx):
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                 legend=dict(orientation="h", y=1.15, x=0),
             )
-            ve(f, che_do="tuong_tac")
+            ve(f, che_do="co_dinh")
 
         # Biểu đồ 2: Số ngày nắng nóng gió Lào >= 35°C tại Yên Thành
         with b, st.container(border=True):
@@ -660,4 +660,4 @@ def hien(ctx):
                 legend=dict(orientation="h", y=1.15, x=0),
                 xaxis=dict(showgrid=False),
             )
-            ve(f3, che_do="tuong_tac")
+            ve(f3, che_do="co_dinh")
