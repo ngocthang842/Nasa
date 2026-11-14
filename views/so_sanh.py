@@ -189,7 +189,7 @@ def hien(ctx):
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                 )
-                ve(fig_dot)
+                ve(fig_dot, che_do="co_dinh")
 
                 # Bảng chi tiết gọn gàng bên dưới
                 with st.expander("📋 Xem Bảng Số liệu Chi tiết Đa năm", expanded=False):
@@ -257,7 +257,7 @@ def hien(ctx):
                 xaxis=dict(gridcolor="#F1F5F9"),
                 yaxis=dict(gridcolor="#F1F5F9"),
             )
-            ve(f)
+            ve(f, che_do="tuong_tac")
 
         if len(diem):
             with st.container(border=True):

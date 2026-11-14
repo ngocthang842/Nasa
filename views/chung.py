@@ -344,8 +344,35 @@ button[kind="primary"]:hover,
 """
 
 
-def ve(fig, **kw):
-    cfg = kw.pop("config", {"displayModeBar": False, "responsive": True})
+def ve(fig, che_do="co_dinh", **kw):
+    """Vẽ biểu đồ Plotly với cơ chế tương tác chuẩn chuyên nghiệp.
+    
+    che_do:
+    - 'co_dinh': Dành cho biểu đồ cột (Bar), KPI, đồng hồ đo (Gauge), Gantt chart.
+                 Khóa hoàn toàn kéo hộp zoom (dragmode=False) tránh biến dạng khi rê chuột.
+                 Chỉ hiển thị hover tooltip sắc nét, cố định tỷ lệ chuẩn mực.
+    - 'tuong_tac': Dành cho biểu đồ đường chuỗi thời gian nhiều năm.
+                   Hỗ trợ Pan di chuyển mượt mà (dragmode='pan') và 4 nút chuẩn: [+] [-] [🖐️] [⟲].
+                   Tuyệt đối loại bỏ kéo hộp chọn vùng (box zoom), tắt cuộn chuột zoom nhầm.
+    """
+    if che_do == "co_dinh":
+        fig.update_layout(dragmode=False)
+        cfg = kw.pop("config", {
+            "displayModeBar": False,
+            "scrollZoom": False,
+            "responsive": True,
+        })
+    else:
+        fig.update_layout(dragmode="pan")
+        cfg = kw.pop("config", {
+            "displayModeBar": True,
+            "modeBarButtonsToAdd": ["zoomIn2d", "zoomOut2d", "resetScale2d", "pan2d"],
+            "modeBarButtonsToRemove": ["select2d", "lasso2d", "zoom2d", "autoScale2d", "toImage"],
+            "displaylogo": False,
+            "scrollZoom": False,
+            "responsive": True,
+        })
+
     try:
         st.plotly_chart(fig, width="stretch", config=cfg, **kw)
     except TypeError:

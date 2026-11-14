@@ -249,7 +249,7 @@ def hien(ctx):
 
             col_gauge, col_telemetry = st.columns([1, 1], gap="small")
             with col_gauge:
-                ve(ve_dong_ho_rui_ro(w, muc, mau))
+                ve(ve_dong_ho_rui_ro(w, muc, mau), che_do="co_dinh")
 
             with col_telemetry:
                 tmax_val = r.get("tmax", 30.0) if pd.notna(r.get("tmax")) else 30.0
@@ -362,7 +362,7 @@ def hien(ctx):
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                 legend=dict(orientation="h", y=1.15, x=0),
             )
-            ve(f)
+            ve(f, che_do="tuong_tac")
 
         # Biểu đồ 2: Số ngày nắng nóng gió Lào >= 35°C tại Yên Thành
         with b, st.container(border=True):
@@ -385,7 +385,7 @@ def hien(ctx):
                     yaxis=dict(showgrid=True, gridcolor="#F1F5F9"),
                     xaxis=dict(showgrid=False),
                 )
-                ve(g)
+                ve(g, che_do="co_dinh")
 
         # Biểu đồ 3: Độ xanh sinh thái lúa (NDVI) & Cán cân nước ruộng lúa Yên Thành
         with c3, st.container(border=True):
@@ -411,4 +411,4 @@ def hien(ctx):
                 legend=dict(orientation="h", y=1.15, x=0),
                 xaxis=dict(showgrid=False),
             )
-            ve(f3)
+            ve(f3, che_do="tuong_tac")

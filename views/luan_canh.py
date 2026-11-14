@@ -629,4 +629,4 @@ def hien(ctx):
                 yaxis=dict(autorange="reversed"),
                 showlegend=False,
             )
-            ve(fig_gantt)
+            ve(fig_gantt, che_do="co_dinh")
