@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import engine as E
-from views import luan_canh, so_sanh, du_lieu
+from views import du_lieu
 from views.ban_do import hien_ban_do
 from views.ve_tinh import hien_ve_tinh
 from views.chung import tieu_de, ve, kpi_the
@@ -62,18 +62,18 @@ def hien_ndvi(ctx):
 
     # Đánh giá giai đoạn lúa theo tháng
     giai_doan_dict = {
-        1: ("🌱 Mạ non & Cấy lúa Xuân", "NDVI thấp (0.2–0.3), ruộng ngập nước mạ mới bén."),
-        2: ("🌿 Đẻ nhánh rộ", "NDVI tăng nhanh (0.45–0.60), sinh khối lá phát triển mạnh."),
-        3: ("🌾 Làm đòng & Ôm bòng", "NDVI đạt đỉnh cao (0.70–0.85), thảm phủ xanh kín mặt ruộng."),
-        4: ("🌸 Trỗ bông rộ", "NDVI duy trì mức cao (0.65–0.78), lúa bắt đầu vào mẩy."),
-        5: ("✨ Chín vàng & Thu hoạch", "NDVI giảm (0.35–0.50) do lá vàng và gặt rơm rạ."),
-        6: ("🌱 Xuống giống Hè Thu", "NDVI thấp (0.2–0.35), cấy chạy lũ tiểu mãn."),
-        7: ("🌿 Đẻ nhánh Hè Thu", "NDVI tăng nhanh (0.50–0.65) vượt đỉnh nhiệt gió Lào."),
-        8: ("🌾 Làm đòng & Trỗ Hè Thu", "NDVI đạt 0.70–0.80 trước mùa bão."),
-        9: ("🌊 Gặt né lũ & Ngập Kênh Vách Bắc", "NDVI giảm nhanh sau khi gặt chạy lũ."),
-        10: ("🚜 Cày ải đất & Rau màu vụ đông", "NDVI vùng lúa thấp (0.25), vùng ngô/lạc đạt 0.55."),
-        11: ("☀️ Phơi nỏ ruộng vụ đông", "Đất khô ải, chuẩn bị lấy nước."),
-        12: ("💧 Lấy nước đổ ải vụ xuân", "Ruộng đầy nước phù sa sông Lam."),
+        1:  ("🌱 Mạ non & Cấy lúa Xuân",           "NDVI thấp (0.2–0.3), ruộng ngập nước mạ mới bén."),
+        2:  ("🌿 Đẻ nhánh rộ",                      "NDVI tăng nhanh (0.45–0.60), sinh khối lá phát triển mạnh."),
+        3:  ("🌾 Làm đòng & Ôm bòng",               "NDVI đạt đỉnh cao (0.70–0.85), thảm phủ xanh kín mặt ruộng."),
+        4:  ("🌸 Trỗ bông rộ",                       "NDVI duy trì mức cao (0.65–0.78), lúa bắt đầu vào mẩy."),
+        5:  ("✨ Chín vàng & Thu hoạch",             "NDVI giảm (0.35–0.50) do lá vàng và gặt rơm rạ."),
+        6:  ("🌱 Xuống giống Hè Thu",                "NDVI thấp (0.2–0.35), cấy chạy lũ tiểu mãn."),
+        7:  ("🌿 Đẻ nhánh Hè Thu",                  "NDVI tăng nhanh (0.50–0.65) vượt đỉnh nhiệt gió Lào."),
+        8:  ("🌾 Làm đòng & Trỗ Hè Thu",            "NDVI đạt 0.70–0.80 trước mùa bão."),
+        9:  ("🌊 Gặt né lũ & Ngập Kênh Vách Bắc",  "NDVI giảm nhanh sau khi gặt chạy lũ."),
+        10: ("🚜 Cày ải đất & Rau màu vụ đông",     "NDVI vùng lúa thấp (0.25), vùng ngô/lạc đạt 0.55."),
+        11: ("☀️ Phơi nỏ ruộng vụ đông",            "Đất khô ải, chuẩn bị lấy nước."),
+        12: ("💧 Lấy nước đổ ải vụ xuân",           "Ruộng đầy nước phù sa sông Lam."),
     }
     gd_ten, gd_mota = giai_doan_dict.get(thang, ("Giai đoạn sinh trưởng lúa", "Giám sát viễn thám"))
 
@@ -299,10 +299,8 @@ def hien_cong_thuc_thuat_toan(ctx):
     vung = "Yên Thành"
     tieu_de(vung, thang, nam, "Công thức Viễn thám & Thuật toán Ra Quyết định Mùa Vụ", False)
 
-    tab_ct, tab_lc, tab_ss = st.tabs([
+    tab_ct, = st.tabs([
         "🧮 Bảng Công thức Viễn thám NASA",
-        "🌾 Thuật toán Tối ưu hóa Luân canh Cây trồng",
-        "📈 Thuật toán Phân tích Đối chiếu Đa năm"
     ])
 
     with tab_ct:
@@ -368,11 +366,6 @@ def hien_cong_thuc_thuat_toan(ctx):
                     unsafe_allow_html=True,
                 )
 
-    with tab_lc:
-        luan_canh.hien(ctx)
-
-    with tab_ss:
-        so_sanh.hien(ctx)
 
 
 # -----------------------------------------------------------------------------
