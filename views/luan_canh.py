@@ -247,10 +247,15 @@ def _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_ca
     with st.container(border=True):
         st.markdown(
             """
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
               <div>
                 <div style="font-size:13.5px; font-weight:800; color:#0F172A;">📋 Bảng Ma Trận Cơ Cấu 2 Vụ Thuần Lúa Chuẩn Hóa Yên Thành</div>
-                <div style="font-size:11.5px; color:#64748B;">Cơ cấu thuần thục: Lúa Chiêm Xuân (vụ chính) + Lúa Hè Thu (chạy lũ) + Cày ải phơi ruộng vụ đông</div>
+                <div style="font-size:11.5px; color:#64748B;">
+                  Khung quy chuẩn nông học trích xuất từ <b>Đề án Sản xuất Nông nghiệp Huyện Yên Thành</b> & Báo cáo đề tài <i>(Bao-cao-He-thong-Phan-tich-va-Du-bao-Nang-suat-Lua-Yen-Thanh-2027.pdf)</i>
+                </div>
+              </div>
+              <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:6px; padding:3px 9px; font-size:11px; font-weight:750; color:#15803D;">
+                🌾 Chuẩn Nông Nghiệp Xứ Nghệ
               </div>
             </div>
             """,
@@ -260,27 +265,27 @@ def _hien_tab_thuan_lua(dl, vung, nam, cac_dot, ke_hoach_nguoi_dung, danh_gia_ca
         rows_table = [
             {
                 "Vụ Mùa": "🌾 1. Vụ Lúa Chiêm Xuân",
-                "Khung Thời Gian": "Tháng 1 → Tháng 5 (5 tháng)",
+                "Khung Lịch Canh Tác": "Tháng 1 → Tháng 5 (Xuống giống 10–25/01; Trổ rộ cuối T4; Gặt T5)",
                 "Cây Trồng & Tỷ Lệ": "🌾 Lúa thuần thâm canh (100% diện tích)",
-                "Giống Lúa Khuyến Cáo": "ST25, J02, TBR225, Bắc Thịnh",
-                "Năng Suất Kỳ Vọng": "68–72 tạ/ha (Kỷ lục thâm canh)",
-                "Biện Pháp Trọng Tâm": "Gieo mạ che phủ nilon T1 chống rét, trỗ rộ T4 né táp gió Lào, gặt T5.",
+                "Bộ Giống Chủ Lực": "ST25, J02, TBR225, Bắc Thịnh",
+                "Năng Suất Kỷ Lục": "68–72 tạ/ha (Đỉnh thâm canh)",
+                "Biện Pháp Trọng Tâm": "Gieo mạ che phủ nilon chống rét Tmin < 15°C, trổ rộ cuối T4 né táp gió Lào, tháo cạn nước gặt rộ trong T5.",
             },
             {
                 "Vụ Mùa": "☀️ 2. Vụ Lúa Hè Thu",
-                "Khung Thời Gian": "Tháng 6 → Tháng 9 (4 tháng)",
-                "Cây Trồng & Tỷ Lệ": "🌾 Lúa hè thu ngắn ngày (100% diện tích)",
-                "Giống Lúa Khuyến Cáo": "Khang Dân 18, Đài Thơm 8, BT7",
+                "Khung Lịch Canh Tác": "Tháng 6 → Tháng 9 (Cấy khẩn trương 05–20/06; Gặt trước 15/9 né lũ)",
+                "Cây Trồng & Tỷ Lệ": "🌾 Lúa hè thu cực ngắn ngày (100% diện tích)",
+                "Bộ Giống Chủ Lực": "Khang Dân 18, Đài Thơm 8, BT7",
                 "Năng Suất Kỳ Vọng": "54–58 tạ/ha (Né lụt thành công)",
-                "Biện Pháp Trọng Tâm": "Cấy cực nhanh đầu T6, dâng nước làm mát T7, gặt dứt điểm trước 15/9 né bão lũ.",
+                "Biện Pháp Trọng Tâm": "Cấy cực nhanh sau gặt xuân, dâng nước 3–5 cm làm mát khi Tmax ≥ 37°C, gặt dứt điểm trước 15/9 né bão lũ >350mm.",
             },
             {
                 "Vụ Mùa": "🚜 3. Phơi Ải Vụ Đông",
-                "Khung Thời Gian": "Tháng 10 → Tháng 12 (3 tháng)",
+                "Khung Lịch Canh Tác": "Tháng 10 → Tháng 12 (Nghỉ đất hoàn nguyên độ phì; Đón nước T12)",
                 "Cây Trồng & Tỷ Lệ": "🍂 Cày phơi nỏ ải (100% diện tích)",
-                "Giống Lúa Khuyến Cáo": "Nghỉ đất hoàn nguyên độ phì",
-                "Năng Suất Kỳ Vọng": "Diệt 90% mầm đạo ôn & sâu rầy",
-                "Biện Pháp Trọng Tâm": "Cày sâu 18–22 cm phơi khô ruộng, bón vôi khử chua, đón nước sông Lam T12.",
+                "Bộ Giống Chủ Lực": "Cày lật tầng đất phơi khô nỏ",
+                "Năng Suất Kỳ Vọng": "Diệt 85–90% mầm bệnh đạo ôn",
+                "Biện Pháp Trọng Tâm": "Cày sâu 18–22 cm phá vỡ tầng yếm khí, rải 20–25 kg vôi bột/sào khử chua đất pH 5.62, đón nước phù sa sông Lam.",
             },
         ]
 
