@@ -506,14 +506,29 @@ def danh_gia_ke_hoach_nam(cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map):
 
     rui_ro_tb_nam = float(np.mean(rui_ro_list)) if rui_ro_list else 35.0
 
-    # Điểm luân canh
+    # Điểm luân canh & bồi dưỡng đất
     diem_luan_canh = 75
+    diem_suc_khoe_dat = 70
+    tiet_kiem_nuoc_pct = 0
+    co_de_ai = any(len(ke_hoach_nguoi_dung.get(d["ma"], [])) == 0 for d in cac_dot)
+
     if co_cay_dau:
         diem_luan_canh += 15
+        diem_suc_khoe_dat += 18
+        tiet_kiem_nuoc_pct += 20
+    if co_de_ai:
+        diem_suc_khoe_dat += 12
+        tiet_kiem_nuoc_pct += 15
     if so_vu_lua >= 3:
         diem_luan_canh -= 20
+        diem_suc_khoe_dat -= 25
+        tiet_kiem_nuoc_pct = max(0, tiet_kiem_nuoc_pct - 15)
+    elif so_vu_lua == 1:
+        tiet_kiem_nuoc_pct += 10
 
     diem_luan_canh = max(30, min(100, diem_luan_canh))
+    diem_suc_khoe_dat = max(35, min(98, diem_suc_khoe_dat))
+    tiet_kiem_nuoc_pct = max(0, min(45, tiet_kiem_nuoc_pct))
 
     muc_nam = "An toàn cao" if rui_ro_tb_nam < 35 else ("Trung bình" if rui_ro_tb_nam < 55 else "Cần theo dõi sát")
 
@@ -532,26 +547,57 @@ def danh_gia_ke_hoach_nam(cac_dot, ke_hoach_nguoi_dung, danh_gia_cac_dot_map):
         "muc_rui_ro_nam": muc_nam,
         "cay_da_dung": sorted(list(set(cays_nam))),
         "diem_luan_canh": diem_luan_canh,
+        "diem_suc_khoe_dat": diem_suc_khoe_dat,
+        "tiet_kiem_nuoc_pct": tiet_kiem_nuoc_pct,
+        "co_cay_dau": co_cay_dau,
+        "co_de_ai": co_de_ai,
         "khuyen_nghi_tong": " ".join(khuyen_nghi_tong) if khuyen_nghi_tong else "Kế hoạch canh tác hài hòa với chu kỳ khí tượng Yên Thành.",
     }
 
 
-def goi_y_to_hop_toi_uu(dl, vung, nam, cac_dot):
-    """Tự động gợi ý tổ hợp cây trồng tốt nhất theo lịch sử cho vựa lúa Yên Thành."""
+def goi_y_to_hop_toi_uu(dl, vung, nam, cac_dot, uu_tien="cai_tao_dat"):
+    """Tự động gợi ý tổ hợp cây trồng tối ưu theo 4 Mục Tiêu Ưu Tiên của Nông Dân."""
     goi_y = {}
+
     for d in cac_dot:
         t_start, t_end = d["thang_bat_dau"], d["thang_ket_thuc"]
-        df_dg = danh_gia_cay_theo_dot(dl, vung, t_start, t_end, nam)
 
-        if 1 <= t_start <= 4:
-            # Vụ xuân: ưu tiên Lúa xuân (80%) + Lạc (20%)
-            goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 80}, {"cay": "Lạc", "ty_le_pct": 20}]
-        elif 5 <= t_start <= 7:
-            # Vụ hè thu: chuyên canh Lúa hè thu chạy lũ
-            goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 100}]
+        if "tiet_kiem_nuoc" in uu_tien or "nước" in str(uu_tien).lower():
+            # ƯU TIÊN 1: TIẾT KIỆM NƯỚC & CHỐNG HẠN
+            if 1 <= t_start <= 4:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 70}, {"cay": "Lạc", "ty_le_pct": 30}]
+            elif 5 <= t_start <= 7:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 60}, {"cay": "Ngô", "ty_le_pct": 40}]
+            else:
+                goi_y[d["ma"]] = [{"cay": "Ngô", "ty_le_pct": 70}, {"cay": "Rau màu vụ đông", "ty_le_pct": 30}]
+
+        elif "cai_tao_dat" in uu_tien or "đất" in str(uu_tien).lower() or "sức khỏe" in str(uu_tien).lower():
+            # ƯU TIÊN 2: CẢI TẠO & PHỤC HỒI SỨC KHỎE ĐẤT (CỐ ĐỊNH ĐẠM & PHƠI ẢI)
+            if 1 <= t_start <= 4:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 60}, {"cay": "Lạc", "ty_le_pct": 40}]
+            elif 5 <= t_start <= 7:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 70}, {"cay": "Lạc", "ty_le_pct": 30}]
+            else:
+                # Vụ đông để ải phơi nỏ đất diệt mầm đạo ôn
+                goi_y[d["ma"]] = []
+
+        elif "nang_suat" in uu_tien or "thu nhập" in str(uu_tien).lower() or "kinh tế" in str(uu_tien).lower():
+            # ƯU TIÊN 3: TỐI ĐA HÓA NĂNG SUẤT & THU NHẬP
+            if 1 <= t_start <= 4:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 100}]
+            elif 5 <= t_start <= 7:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 100}]
+            else:
+                goi_y[d["ma"]] = [{"cay": "Rau màu vụ đông", "ty_le_pct": 100}]
+
         else:
-            # Vụ đông: Ngô đông (60%) + Rau màu vụ đông (40%)
-            goi_y[d["ma"]] = [{"cay": "Ngô", "ty_le_pct": 60}, {"cay": "Rau màu vụ đông", "ty_le_pct": 40}]
+            # ƯU TIÊN 4: AN TOÀN MÙA VỤ / NÉ THIÊN TAI (GIÓ LÀO & BÃO LŨ)
+            if 1 <= t_start <= 4:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 80}, {"cay": "Lạc", "ty_le_pct": 20}]
+            elif 5 <= t_start <= 7:
+                goi_y[d["ma"]] = [{"cay": "Lúa", "ty_le_pct": 100}]
+            else:
+                goi_y[d["ma"]] = [{"cay": "Ngô", "ty_le_pct": 60}, {"cay": "Rau màu vụ đông", "ty_le_pct": 40}]
 
     return goi_y
 

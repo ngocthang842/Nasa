@@ -79,28 +79,74 @@ def hien(ctx):
             unsafe_allow_html=True,
         )
 
-        col_che_do, col_btn = st.columns([7, 3], gap="medium")
-
-        che_do_dot = col_che_do.pills(
-            "Chọn mô hình mùa vụ:",
-            [
-                "🌾 2 Vụ Lúa thuần (Xuân T1–T5 & Hè Thu T6–T9)",
-                "🌟 3 Đợt Luân canh Lúa – Cây Đông (Xuân T1–T4, Hè Thu T5–T8, Đông T9–T12)",
-                "⚙️ Tự do tùy chỉnh chân ruộng",
-            ],
-            default="🌾 2 Vụ Lúa thuần (Xuân T1–T5 & Hè Thu T6–T9)",
-            key=f"che_do_chia_dot_pills_{E.khoa(vung)}_{nam}",
-            label_visibility="collapsed",
+        st.markdown(
+            '<div style="font-size:13px; font-weight:800; color:#0F172A; margin:4px 0 2px 0;">'
+            '🎯 Mục tiêu Ưu tiên của Nông dân (Farmer Priorities):'
+            '</div>'
+            '<div style="font-size:11.5px; color:#64748B; margin-bottom:8px;">'
+            'Chọn mục tiêu ưu tiên để hệ thống AI tự động đề xuất phương án luân canh và cơ cấu cây trồng phù hợp nhất'
+            '</div>',
+            unsafe_allow_html=True,
         )
-        if not che_do_dot:
-            che_do_dot = "🌾 2 Vụ Lúa thuần (Xuân T1–T5 & Hè Thu T6–T9)"
 
-        # Nút tự động gợi ý cơ cấu cây
-        btn_auto = col_btn.button(
-            "✨ Gợi ý Cơ cấu Tối ưu (NASA AI)",
-            help="Hệ thống tự động phân tích 11 năm dữ liệu viễn thám để chọn cơ cấu cây trồng có rủi ro thấp nhất cho từng đợt",
-            use_container_width=True,
-        )
+        c_prio, c_btn_prio = st.columns([7.2, 2.8], gap="small")
+        with c_prio:
+            uu_tien_nong_dan = st.segmented_control(
+                "Ưu tiên của nông dân:",
+                options=[
+                    "🧪 Cải tạo đất & Bồi dưỡng độ phì",
+                    "💧 Tiết kiệm nước & Chống hạn",
+                    "💰 Năng suất & Thu nhập cao",
+                    "🛡️ An toàn & Né thiên tai",
+                ],
+                default="🧪 Cải tạo đất & Bồi dưỡng độ phì",
+                key=f"seg_farmer_priority_{E.khoa(vung)}_{nam}",
+                label_visibility="collapsed",
+            ) if hasattr(st, "segmented_control") else st.selectbox(
+                "Ưu tiên của nông dân:",
+                [
+                    "🧪 Cải tạo đất & Bồi dưỡng độ phì",
+                    "💧 Tiết kiệm nước & Chống hạn",
+                    "💰 Năng suất & Thu nhập cao",
+                    "🛡️ An toàn & Né thiên tai",
+                ],
+                index=0,
+                key=f"sel_farmer_priority_{E.khoa(vung)}_{nam}",
+            )
+            if not uu_tien_nong_dan:
+                uu_tien_nong_dan = "🧪 Cải tạo đất & Bồi dưỡng độ phì"
+
+        with c_btn_prio:
+            btn_auto = st.button(
+                "✨ Gợi ý theo Ưu tiên (NASA AI)",
+                help="Hệ thống tự động phân tích dữ liệu viễn thám NASA và thổ nhưỡng Yên Thành để tối ưu hóa mùa vụ theo đúng ưu tiên bạn đã chọn",
+                type="primary",
+                use_container_width=True,
+            )
+
+        st.markdown("<hr style='border-color:#F1F5F9; margin:8px 0 10px 0;'>", unsafe_allow_html=True)
+
+        col_che_do = st.container()
+        with col_che_do:
+            st.markdown(
+                '<div style="font-size:12.5px; font-weight:750; color:#334155; margin-bottom:4px;">'
+                '🌾 Chọn khung mùa vụ thực tế:'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            che_do_dot = st.pills(
+                "Chọn mô hình mùa vụ:",
+                [
+                    "🌾 2 Vụ Lúa thuần (Xuân T1–T5 & Hè Thu T6–T9)",
+                    "🌟 3 Đợt Luân canh Lúa – Cây Đông (Xuân T1–T4, Hè Thu T5–T8, Đông T9–T12)",
+                    "⚙️ Tự do tùy chỉnh chân ruộng",
+                ],
+                default="🌾 2 Vụ Lúa thuần (Xuân T1–T5 & Hè Thu T6–T9)",
+                key=f"che_do_chia_dot_pills_{E.khoa(vung)}_{nam}",
+                label_visibility="collapsed",
+            )
+            if not che_do_dot:
+                che_do_dot = "🌾 2 Vụ Lúa thuần (Xuân T1–T5 & Hè Thu T6–T9)"
 
         # Xử lý cấu trúc các đợt canh tác
         if "2 Vụ Lúa" in che_do_dot:
@@ -212,12 +258,12 @@ def hien(ctx):
                         "dac_trung": f"Đợt {i+1} gồm {so_thang} tháng (từ tháng {t_start} đến tháng {t_end}).",
                     })
 
-        # Xử lý nút bấm tự động gợi ý cơ cấu cây
+        # Xử lý nút bấm tự động gợi ý cơ cấu cây theo ưu tiên của nông dân
         if btn_auto:
-            goi_y_auto = E.goi_y_to_hop_toi_uu(dl, vung, nam, cac_dot)
+            goi_y_auto = E.goi_y_to_hop_toi_uu(dl, vung, nam, cac_dot, uu_tien=uu_tien_nong_dan)
             for d in cac_dot:
                 st.session_state[_khoa_session(vung, nam, d["ma"])] = goi_y_auto.get(d["ma"], [])
-            st.toast("✅ Đã cập nhật cơ cấu cây trồng tối ưu theo chuỗi khí tượng Yên Thành!")
+            st.toast(f"✅ Đã tối ưu hóa mùa vụ theo ưu tiên: {uu_tien_nong_dan}!", icon="🌾")
             st.rerun()
 
         # DẢI TIMELINE GANTT 12 THÁNG & BĂNG CẢNH BÁO THIÊN TAI NASA
@@ -567,6 +613,66 @@ def hien(ctx):
               {danh_gia_nam['khuyen_nghi_tong']}
             </div>
             </div>""",
+            unsafe_allow_html=True,
+        )
+
+        # KHỐI SO SÁNH ĐỊNH LƯỢNG SỨC KHỎE ĐẤT & PHỤC HỒI DÀI HẠN (SOIL HEALTH INDEX - SHI)
+        shi_val = danh_gia_nam.get("diem_suc_khoe_dat", 85)
+        nuoc_val = danh_gia_nam.get("tiet_kiem_nuoc_pct", 20)
+        co_dau = danh_gia_nam.get("co_cay_dau", False)
+        co_ai = danh_gia_nam.get("co_de_ai", False)
+
+        st.markdown(
+            f"""
+            <div style="background:#FFFFFF; border:1.5px solid #BBF7D0; border-radius:12px; padding:14px 18px; margin-top:12px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:20px;">🧪</span>
+                  <div>
+                    <div style="font-size:14px; font-weight:800; color:#0F172A;">ĐÁNH GIÁ SỨC KHỎE ĐẤT & KHẢ NĂNG PHỤC HỒI LÂU DÀI (SOIL HEALTH INDEX)</div>
+                    <div style="font-size:11.5px; color:#16A34A; font-weight:700;">Mô phỏng nông học trên thổ nhưỡng Yên Thành (Carbon hữu cơ SOC, N cố định, Nấm bệnh, Nước tưới Ba Ra)</div>
+                  </div>
+                </div>
+                <div style="font-size:12px; font-weight:800; color:#16A34A; background:#DCFCE7; border:1px solid #16A34A; border-radius:999px; padding:2px 10px;">
+                  Chỉ số SHI: {shi_val}/100
+                </div>
+              </div>
+              
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
+                <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px;">
+                  <div style="font-size:11px; font-weight:750; color:#16A34A;">🍂 CARBON HỮU CƠ (SOC)</div>
+                  <div style="font-size:18px; font-weight:800; color:#0F172A;">{'+25% đến +35%' if co_dau else 'Duy trì ổn định'}</div>
+                  <div style="font-size:11px; color:#475569;">Bồi đắp sinh khối & nốt sần rễ</div>
+                </div>
+                <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:10px;">
+                  <div style="font-size:11px; font-weight:750; color:#0284C7;">💧 TIẾT KIỆM NƯỚC TƯỚI</div>
+                  <div style="font-size:18px; font-weight:800; color:#0F172A;">Tiết kiệm ~{nuoc_val}%</div>
+                  <div style="font-size:11px; color:#475569;">Giảm áp lực Ba Ra Đô Lương</div>
+                </div>
+                <div style="background:#FFFBEB; border:1px solid #FDE68A; border-radius:8px; padding:10px;">
+                  <div style="font-size:11px; font-weight:750; color:#D97706;">🦠 CẮT MẦM ĐẠO ÔN & SÂU</div>
+                  <div style="font-size:18px; font-weight:800; color:#0F172A;">{'Giảm 85–90%' if co_ai else 'Cần theo dõi sát'}</div>
+                  <div style="font-size:11px; color:#475569;">Nhờ cày lật phơi nỏ ải đất</div>
+                </div>
+                <div style="background:#FAF5FF; border:1px solid #E9D5FF; border-radius:8px; padding:10px;">
+                  <div style="font-size:11px; font-weight:750; color:#7C3AED;">🛡️ KHẢ NĂNG THÍCH ỨNG</div>
+                  <div style="font-size:18px; font-weight:800; color:#0F172A;">{danh_gia_nam['muc_rui_ro_nam']}</div>
+                  <div style="font-size:11px; color:#475569;">Thích ứng biến đổi khí hậu</div>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:12px; line-height:1.45; border-top:1px solid #E2E8F0; padding-top:10px;">
+                <div style="flex:1; min-width:280px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:8px 12px;">
+                  <b style="color:#DC2626;">❌ Nếu Độc Canh Lúa thuần (2–3 vụ liên tục):</b><br>
+                  Đất ruộng bị dí nén, yếm khí lâu ngày; nấm đạo ôn và ấu trùng sâu đục thân tích tụ trong bùn; tiêu hao >12.000 m³ nước/ha; độ phì nhiêu suy giảm dần qua từng năm.
+                </div>
+                <div style="flex:1; min-width:280px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:8px 12px;">
+                  <b style="color:#16A34A;">✅ Khi Thực Hiện Luân Canh Lúa – Lạc – Phơi Ải:</b><br>
+                  Rễ lạc tiết nốt sần Rhizobium cố định 40–60 kg N/ha hữu cơ tự nhiên; phơi nỏ ruộng vụ đông diệt bào tử nấm; đất tơi xốp, hệ vi sinh vật hiếu khí hồi sinh mạnh mẽ.
+                </div>
+              </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 

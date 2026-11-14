@@ -39,13 +39,15 @@ st.set_page_config(
 st.markdown(CSS, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# DANH MỤC 8 MỤC ĐIỀU HƯỚNG CHUẨN XÁC 100% THEO ẢNH NASA NEDA
+# DANH MỤC ĐIỀU HƯỚNG CHUẨN NASA NEDA & LUÂN CANH CÂY TRỒNG
 # -----------------------------------------------------------------------------
 DANH_MUC = [
     "📊  Bảng điều khiển",
+    "🌾  Kế hoạch Luân canh & Sức khỏe Đất",
+    "📈  So sánh Lịch sử các năm",
     "🛰️  Nguồn Vệ tinh (MODIS, SMAP...)",
     "🍃  Phân tích Thảm thực vật (NDVI)",
-    "💧  Độ ẩm đất",
+    "💧  Độ ẩm đất (SMAP)",
     "🌧️  Lượng mưa (GPM)",
     "🌡️  Nhiệt độ bề mặt (LST)",
     "ƒx  Công thức & Thuật toán",
@@ -54,9 +56,11 @@ DANH_MUC = [
 
 TRANG = {
     "📊  Bảng điều khiển": tong_quan.hien,
+    "🌾  Kế hoạch Luân canh & Sức khỏe Đất": luan_canh.hien,
+    "📈  So sánh Lịch sử các năm": so_sanh.hien,
     "🛰️  Nguồn Vệ tinh (MODIS, SMAP...)": ho_so_yen_thanh.hien,
     "🍃  Phân tích Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
-    "💧  Độ ẩm đất": chi_tiet_nasa.hien_do_am,
+    "💧  Độ ẩm đất (SMAP)": chi_tiet_nasa.hien_do_am,
     "🌧️  Lượng mưa (GPM)": chi_tiet_nasa.hien_luong_mua,
     "🌡️  Nhiệt độ bề mặt (LST)": chi_tiet_nasa.hien_nhiet_do,
     "ƒx  Công thức & Thuật toán": chi_tiet_nasa.hien_cong_thuc_thuat_toan,
