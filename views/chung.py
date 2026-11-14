@@ -137,21 +137,31 @@ div[data-testid="stSidebar"] div[data-testid="stRadio"] label {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* ẨN TRIỆT ĐỂ DẤU CHẤM TRÒN RADIO TRÊN MỌI PHIÊN BẢN STREAMLIT (REACT ARIA) */
+/* ẨN TRIỆT ĐỂ 100% DẤU CHẤM TRÒN RADIO TRÊN MỌI PHIÊN BẢN STREAMLIT */
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label > div:first-child,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label > div:first-of-type,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label > div > div:first-child,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label > div > span,
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label input[type="radio"],
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label span:has(input[type="radio"]),
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label div:has(> input[type="radio"]),
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label div:has(input),
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="RadioMark"],
 div[data-testid="stSidebar"] div[data-testid="stRadio"] label [data-testid="stRadioMark"],
-div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="ex50key4"],
-div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="ex50key5"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="ex50key"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label [style*="border-radius: 50%"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label [style*="border-radius:50%"],
+div[data-testid="stSidebar"] div[data-testid="stRadioOption"] > div:first-child,
 div[data-testid="stSidebar"] div[data-testid="stRadioOption"] > div > div:first-child,
-div[data-testid="stSidebar"] [role="radiogroup"] label div:first-child:not(:last-child) {
+div[data-testid="stSidebar"] [role="radiogroup"] label > div:first-child {
   display: none !important;
   opacity: 0 !important;
   width: 0 !important;
   height: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
