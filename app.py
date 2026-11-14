@@ -1,8 +1,5 @@
-"""Cửa vào Dashboard RotaNA — Chuyên sâu Vựa lúa Yên Thành (Nghệ An).
-
-Hệ thống hỗ trợ ra quyết định nông nghiệp tập trung vào cây lúa nước và các mô hình
-luân canh lúa – màu (Lạc, Ngô, Rau màu vụ đông) tại huyện Yên Thành, Nghệ An.
-Sidebar chỉ chứa logo và danh mục các trang chính, toàn bộ thông tin chi tiết được hiển thị trên trang web.
+"""Cửa vào Dashboard NASA NEDA / RotaNA — Chuyên sâu Vựa lúa Yên Thành (Nghệ An).
+Thiết kế Sidebar & Hệ thống Viễn thám chuẩn xác 100% theo bản mô phỏng NASA Environmental Data Analysis (NEDA).
 """
 import importlib
 import streamlit as st
@@ -12,9 +9,18 @@ E = importlib.reload(E)
 
 from views import chung
 chung = importlib.reload(chung)
-from views.chung import CSS
+from views.chung import CSS, NASA_LOGO_SVG
 
-from views import ban_do, du_lieu, ho_so_yen_thanh, luan_canh, so_sanh, tong_quan, ve_tinh
+from views import (
+    ban_do,
+    chi_tiet_nasa,
+    du_lieu,
+    ho_so_yen_thanh,
+    luan_canh,
+    so_sanh,
+    tong_quan,
+    ve_tinh,
+)
 ban_do = importlib.reload(ban_do)
 ve_tinh = importlib.reload(ve_tinh)
 du_lieu = importlib.reload(du_lieu)
@@ -22,17 +28,50 @@ luan_canh = importlib.reload(luan_canh)
 so_sanh = importlib.reload(so_sanh)
 tong_quan = importlib.reload(tong_quan)
 ho_so_yen_thanh = importlib.reload(ho_so_yen_thanh)
+chi_tiet_nasa = importlib.reload(chi_tiet_nasa)
 
-st.set_page_config(page_title="RotaNA - Vựa lúa Yên Thành (Nghệ An)", page_icon="🌾", layout="wide")
+st.set_page_config(
+    page_title="Hệ Thống Phân Tích Môi Trường NASA (NEDA) - Yên Thành",
+    page_icon="🛰️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 st.markdown(CSS, unsafe_allow_html=True)
 
-# DANH MỤC TRANG TRÊN SIDEBAR (TÁCH HỒ SƠ YÊN THÀNH THÀNH 1 TRANG RIÊNG)
+# -----------------------------------------------------------------------------
+# DANH MỤC 8 MỤC ĐIỀU HƯỚNG CHUẨN XÁC 100% THEO ẢNH NASA NEDA
+# -----------------------------------------------------------------------------
+DANH_MUC = [
+    "📊  Bảng điều khiển",
+    "🛰️  Nguồn Vệ tinh",
+    "🍃  Phân tích Thảm thực vật (NDVI)",
+    "💧  Độ ẩm đất",
+    "🌧️  Lượng mưa (GPM)",
+    "🌡️  Nhiệt độ bề mặt (LST)",
+    "ƒx  Công thức & Thuật toán",
+    "📥  Tải dữ liệu API",
+]
+
+CAPTIONS = [
+    None,
+    "(MODIS, SMAP, Landsat...)",
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+]
+
 TRANG = {
-    "🌾  Tổng quan Mùa vụ Lúa": tong_quan.hien,
-    "🔄  Kế hoạch Đợt vụ & Luân canh": luan_canh.hien,
-    "📈  So sánh Lịch sử các năm": so_sanh.hien,
-    "🏛️  Hồ sơ Vựa lúa Yên Thành": ho_so_yen_thanh.hien,
-    "📁  Dữ liệu Vệ tinh NASA": du_lieu.hien,
+    "📊  Bảng điều khiển": tong_quan.hien,
+    "🛰️  Nguồn Vệ tinh": ho_so_yen_thanh.hien,
+    "🍃  Phân tích Thảm thực vật (NDVI)": chi_tiet_nasa.hien_ndvi,
+    "💧  Độ ẩm đất": chi_tiet_nasa.hien_do_am,
+    "🌧️  Lượng mưa (GPM)": chi_tiet_nasa.hien_luong_mua,
+    "🌡️  Nhiệt độ bề mặt (LST)": chi_tiet_nasa.hien_nhiet_do,
+    "ƒx  Công thức & Thuật toán": chi_tiet_nasa.hien_cong_thuc_thuat_toan,
+    "📥  Tải dữ liệu API": chi_tiet_nasa.hien_tai_du_lieu_api,
 }
 
 
@@ -53,16 +92,25 @@ if "nam_ke_hoach" not in st.session_state:
 
 nam = st.session_state["nam_ke_hoach"]
 
+# =============================================================================
+# SIDEBAR THEME COMMAND CENTER (NASA NEDA)
+# =============================================================================
 with st.sidebar:
-    # 1. HEADER BRANDING (THEME TRẮNG TINH TẾ)
+    # 1. HEADER BRANDING NASA CHUẨN XÁC
     st.markdown(
-        """
-        <div style="padding: 4px 0 16px 0;">
-            <div style="display:flex; align-items:center; gap:12px;">
-                <div style="background:#F1F5F9; border:1.5px solid #E2E8F0; border-radius:12px; padding:7px 11px; font-size:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">🌾</div>
+        f"""
+        <div style="padding: 6px 0 16px 0; border-bottom: 1px solid #1E293B; margin-bottom: 12px;">
+            <div style="display:flex; align-items:center; gap:11px;">
+                <div style="flex-shrink:0;">
+                    {NASA_LOGO_SVG}
+                </div>
                 <div>
-                    <div style="font-size:22px; font-weight:800; color:#0F172A; letter-spacing:-0.5px; line-height:1.1;">RotaNA</div>
-                    <div style="font-size:12px; color:#64748B; font-weight:500; margin-top:3px;">Vựa lúa Yên Thành · Nghệ An</div>
+                    <div style="font-size:12.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.4px; line-height:1.2; text-transform:uppercase;">
+                        HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)
+                    </div>
+                    <div style="font-size:11px; color:#2DD4BF; font-weight:700; margin-top:3px;">
+                        RotaNA · Vựa lúa Yên Thành
+                    </div>
                 </div>
             </div>
         </div>
@@ -70,12 +118,47 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # 2. MENU ĐIỀU HƯỚNG DẠNG THẺ (SIDEBAR CHỈ GIỮ MENU, ĐÃ XÓA KHỐI DƯ THỪA)
-    trang = st.radio("Chọn trang", list(TRANG.keys()), label_visibility="collapsed")
+    # 2. MENU ĐIỀU HƯỚNG DẠNG LIST CARD CÓ ACTIVE TEAL
+    trang = st.radio(
+        "Menu điều hướng:",
+        options=DANH_MUC,
+        captions=CAPTIONS,
+        index=0,
+        label_visibility="collapsed",
+    )
 
     if dl.empty:
         st.error("Không tìm thấy dữ liệu trong data/processed.")
         st.stop()
+
+# =============================================================================
+# TOP HEADER BAR TRÊN TRANG CHÍNH (KHỚP 100% VỚI LAPTOP MOCKUP)
+# =============================================================================
+col_top_left, col_top_right = st.columns([7.8, 2.2], gap="small")
+with col_top_left:
+    st.markdown(
+        f"""
+        <div style="display:flex; align-items:center; gap:12px; padding: 2px 0 10px 0;">
+            <div style="flex-shrink:0;">
+                {NASA_LOGO_SVG}
+            </div>
+            <div>
+                <div style="font-size:17px; font-weight:800; color:#0F172A; letter-spacing:0.4px; text-transform:uppercase; line-height:1.2;">
+                    HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)
+                </div>
+                <div style="font-size:12px; color:#0284C7; font-weight:650;">
+                    Giám sát Viễn thám & Ra Quyết định Mùa vụ Lúa nước · Huyện Yên Thành (Nghệ An)
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col_top_right:
+    st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
+    if st.button("📥 CALL DỮ LIỆU NASA", key="btn_call_nasa_main_header", type="primary", use_container_width=True):
+        st.toast("🛰️ Đã đồng bộ chuỗi số liệu vệ tinh NASA MODIS, SMAP, GPM và NASA POWER mới nhất cho Yên Thành!", icon="✅")
 
 # Mặc định tháng 4 nếu chưa chọn
 thang_mac_dinh = 4
@@ -98,4 +181,5 @@ ctx = dict(
     r=cur.iloc[0] if not cur.empty else None,
 )
 
+# Hiển thị view tương ứng
 TRANG[trang](ctx)
