@@ -87,12 +87,12 @@ nam = st.session_state["nam_ke_hoach"]
 with st.sidebar:
     # 1. HEADER BRANDING NASA CHUẨN XÁC (KHÔNG DÙNG MULTILINE INDENT TRÁNH LỖI CODEBLOCK)
     html_sidebar_brand = (
-        '<div style="padding:4px 0 14px 0; border-bottom:1px solid #1E293B; margin-bottom:12px;">'
-        '<div style="display:flex; align-items:center; gap:10px;">'
+        '<div style="padding:6px 2px 18px 2px; border-bottom:1px solid #1E293B; margin-bottom:16px;">'
+        '<div style="display:flex; align-items:center; gap:12px;">'
         f'{NASA_LOGO_SVG}'
         '<div>'
-        '<div style="font-size:12px; font-weight:800; color:#F8FAFC; letter-spacing:0.4px; line-height:1.2; text-transform:uppercase;">HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)</div>'
-        '<div style="font-size:11px; color:#2DD4BF; font-weight:700; margin-top:2px;">RotaNA · Vựa lúa Yên Thành</div>'
+        '<div style="font-size:13.5px; font-weight:800; color:#F8FAFC; letter-spacing:0.5px; line-height:1.25; text-transform:uppercase;">HỆ THỐNG PHÂN TÍCH MÔI TRƯỜNG NASA (NEDA)</div>'
+        '<div style="font-size:11.5px; color:#2DD4BF; font-weight:700; margin-top:3px;">RotaNA · Vựa lúa Yên Thành</div>'
         '</div>'
         '</div>'
         '</div>'

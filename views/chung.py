@@ -31,13 +31,19 @@ div[data-testid="stMain"] li {
 }
 
 /* =========================================================================
-   SIDEBAR THEME: DARK COMMAND CENTER (NASA NEDA chuẩn xác 100% theo ảnh)
-   Nền đen than #0A111E, Active viền ngọc #14B8A6, text ngọc #2DD4BF
+   SIDEBAR THEME: DARK COMMAND CENTER (NASA NEDA - PHÓNG TO & CĂN CHỈNH ĐẸP MẮT)
+   Độ rộng 340px, Thẻ menu 15.5px, Nền dạ quang Teal, Ẩn triệt để chấm radio
    ========================================================================= */
 [data-testid="stSidebar"] {
   background-color: #0A111E !important;
+  min-width: 330px !important;
+  max-width: 360px !important;
   border-right: 1.5px solid #1E293B !important;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 6px 0 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-testid="stSidebar"] > div:first-child {
+  padding: 1rem 1rem 2rem 1rem !important;
 }
 
 [data-testid="stSidebar"] * {
@@ -55,7 +61,7 @@ div[data-testid="stMain"] li {
 /* ĐIỀU CHỈNH DROPDOWN / SELECTBOX TRONG SIDEBAR THEME TỐI */
 [data-testid="stSidebar"] div[data-baseweb="select"] {
   background-color: #111C2E !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   border: 1.5px solid #1E293B !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
 }
@@ -63,16 +69,16 @@ div[data-testid="stMain"] li {
 [data-testid="stSidebar"] div[data-baseweb="select"] > div {
   background-color: #111C2E !important;
   border: none !important;
-  min-height: 40px !important;
-  border-radius: 8px !important;
+  min-height: 44px !important;
+  border-radius: 10px !important;
 }
 
 /* Chữ trong ô chọn: MÀU TRẮNG SÁNG #F8FAFC */
 [data-testid="stSidebar"] div[data-baseweb="select"] * {
   color: #F8FAFC !important;
   -webkit-text-fill-color: #F8FAFC !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
+  font-weight: 650 !important;
+  font-size: 14px !important;
 }
 
 [data-testid="stSidebar"] div[data-baseweb="select"] p {
@@ -89,7 +95,7 @@ div[data-testid="stMain"] li {
 div[data-baseweb="popover"],
 div[data-baseweb="popover"] > div {
   background-color: #111C2E !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   border: 1.5px solid #1E293B !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
 }
@@ -100,7 +106,7 @@ ul[role="listbox"] * {
   background-color: #111C2E !important;
   color: #F8FAFC !important;
   -webkit-text-fill-color: #F8FAFC !important;
-  font-size: 13px !important;
+  font-size: 14px !important;
 }
 
 ul[role="listbox"] li:hover,
@@ -110,68 +116,87 @@ ul[role="listbox"] li:hover * {
   -webkit-text-fill-color: #2DD4BF !important;
 }
 
-/* THIẾT KẾ MENU SIDEBAR NASA NEDA DẠNG LIST CARD CÓ ACTIVE TEAL */
-[data-testid="stSidebar"] [role="radiogroup"] {
+/* THIẾT KẾ MENU SIDEBAR NASA NEDA DẠNG THẺ LỚN (EXPANDED CARDS) */
+div[data-testid="stSidebar"] div[data-testid="stRadio"] [role="radiogroup"] {
   display: flex !important;
   flex-direction: column !important;
-  gap: 3px !important;
+  gap: 8px !important;
+  padding: 4px 0 !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] > label,
-[data-testid="stSidebar"] [role="radiogroup"] label[data-baseweb="radio"] {
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label {
   display: flex !important;
   align-items: center !important;
-  background: transparent !important;
-  border: 1px solid transparent !important;
-  border-radius: 8px !important;
-  padding: 9px 12px !important;
-  margin: 1px 0 !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
   cursor: pointer !important;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] label:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-[data-testid="stSidebar"] [role="radiogroup"] label:hover,
-[data-testid="stSidebar"] [role="radiogroup"] label:hover * {
-  color: #F8FAFC !important;
-}
-
-/* Ẩn dấu chấm tròn radio mặc định của Streamlit */
-[data-testid="stSidebar"] [role="radiogroup"] input[type="radio"],
-[data-testid="stSidebar"] [role="radiogroup"] label > div:first-child,
-[data-testid="stSidebar"] [role="radiogroup"] label div[class*="RadioMark"],
-[data-testid="stSidebar"] [role="radiogroup"] label [data-testid="stRadioMark"] {
+/* ẨN TRIỆT ĐỂ DẤU CHẤM TRÒN RADIO TRÊN MỌI PHIÊN BẢN STREAMLIT (REACT ARIA) */
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label > div > div:first-child,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label > div > span,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label input[type="radio"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label span:has(input[type="radio"]),
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="RadioMark"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label [data-testid="stRadioMark"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="ex50key4"],
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label div[class*="ex50key5"],
+div[data-testid="stSidebar"] div[data-testid="stRadioOption"] > div > div:first-child,
+div[data-testid="stSidebar"] [role="radiogroup"] label div:first-child:not(:last-child) {
   display: none !important;
   opacity: 0 !important;
   width: 0 !important;
   height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
+  border: none !important;
+  visibility: hidden !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] label,
-[data-testid="stSidebar"] [role="radiogroup"] label * {
+/* CHỮ MENU MẶC ĐỊNH: TO RÕ RÀNG (15px), MÀU BẠC ÁNH KIM */
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label p,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label span,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label * {
   color: #94A3B8 !important;
-  font-size: 13.5px !important;
-  font-weight: 550 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
   line-height: 1.35 !important;
+  letter-spacing: -0.1px !important;
 }
 
-/* MỤC MENU ĐANG CHỌN (ACTIVE) -> NỀN XANH TEAL TRONG SUỐT + VIỀN PHẢI XANH NGỌC CỰC ĐẸP */
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
-  background: rgba(20, 184, 166, 0.18) !important;
-  border-right: 4px solid #14B8A6 !important;
-  border-radius: 8px 0 0 8px !important;
+/* HOVER: SÁNG BỪNG TRẮNG BẠC, TRƯỢT NHẸ SANG PHẢI */
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(45, 212, 191, 0.35) !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
 }
 
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked),
-[data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) * {
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover p,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:hover * {
+  color: #FFFFFF !important;
+}
+
+/* MỤC ĐANG CHỌN (ACTIVE): PHÓNG TO, NỀN GRADIENT TEAL, VIỀN XANH NGỌC SÁNG */
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) {
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.24) 0%, rgba(20, 184, 166, 0.10) 100%) !important;
+  border: 1.5px solid rgba(45, 212, 191, 0.5) !important;
+  border-left: 5px solid #2DD4BF !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 18px rgba(20, 184, 166, 0.2) !important;
+}
+
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) p,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) span,
+div[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input:checked) * {
   color: #2DD4BF !important;
-  font-weight: 750 !important;
+  font-size: 15.5px !important;
+  font-weight: 800 !important;
 }
 
 /* Radio ngang (Chế độ xem Đợt vs Tháng) */
@@ -357,7 +382,7 @@ button[kind="primary"]:hover,
 </style>
 """
 
-NASA_LOGO_SVG = '<svg width="34" height="34" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0;"><circle cx="60" cy="60" r="58" fill="#0B3D91"/><circle cx="28" cy="38" r="1.6" fill="#FFFFFF"/><circle cx="46" cy="22" r="1.3" fill="#FFFFFF"/><circle cx="86" cy="28" r="1.8" fill="#FFFFFF"/><circle cx="96" cy="62" r="1.4" fill="#FFFFFF"/><circle cx="34" cy="84" r="1.6" fill="#FFFFFF"/><circle cx="76" cy="88" r="1.3" fill="#FFFFFF"/><path d="M20 62 L98 34 L78 52 L96 56 L38 80 Z" fill="#FC3D21"/><ellipse cx="60" cy="60" rx="52" ry="19" stroke="#FFFFFF" stroke-width="2.6" fill="none" transform="rotate(-32 60 60)"/><text x="60" y="69" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">NASA</text></svg>'
+NASA_LOGO_SVG = '<svg width="42" height="42" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;flex-shrink:0;"><circle cx="60" cy="60" r="58" fill="#0B3D91"/><circle cx="28" cy="38" r="1.6" fill="#FFFFFF"/><circle cx="46" cy="22" r="1.3" fill="#FFFFFF"/><circle cx="86" cy="28" r="1.8" fill="#FFFFFF"/><circle cx="96" cy="62" r="1.4" fill="#FFFFFF"/><circle cx="34" cy="84" r="1.6" fill="#FFFFFF"/><circle cx="76" cy="88" r="1.3" fill="#FFFFFF"/><path d="M20 62 L98 34 L78 52 L96 56 L38 80 Z" fill="#FC3D21"/><ellipse cx="60" cy="60" rx="52" ry="19" stroke="#FFFFFF" stroke-width="2.6" fill="none" transform="rotate(-32 60 60)"/><text x="60" y="69" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#FFFFFF" text-anchor="middle" letter-spacing="2">NASA</text></svg>'
 
 
 def ve(fig, che_do="co_dinh", **kw):
