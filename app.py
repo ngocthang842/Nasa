@@ -112,7 +112,13 @@ with st.sidebar:
     st.markdown(html_sidebar_brand, unsafe_allow_html=True)
 
     # 2. MENU ĐIỀU HƯỚNG DẠNG LIST CARD CÓ ACTIVE TEAL
-    if "menu_dieu_huong" not in st.session_state:
+    # Xử lý an toàn khi chuyển trang từ các nút Lối tắt nhanh
+    if "chuyen_trang_den" in st.session_state and st.session_state["chuyen_trang_den"]:
+        trang_dich = st.session_state.pop("chuyen_trang_den")
+        if trang_dich in DANH_MUC:
+            st.session_state["menu_dieu_huong"] = trang_dich
+
+    if "menu_dieu_huong" not in st.session_state or st.session_state["menu_dieu_huong"] not in DANH_MUC:
         st.session_state["menu_dieu_huong"] = DANH_MUC[0]
 
     trang = st.radio(
