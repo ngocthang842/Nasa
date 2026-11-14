@@ -423,10 +423,64 @@ with tab_3d:
 # TAB 2: BẢN ĐỒ VỆ TINH NGHỆ AN
 # ------------------------------------------
 with tab_map:
-    st.subheader(f"🗺️ Bản Đồ Vệ Tinh Địa Bàn: {lay_icon(huyen)} {lay_ten(huyen)}")
-    st.caption("Xem ảnh vệ tinh độ phân giải cao phóng sát mặt đất: soi rõ từng cánh đồng lúa, bờ vùng bờ thửa, sông ngòi và kênh mương.")
+    st.subheader(f"🗺️ Bản Đồ Địa Bàn & Màn Số Thực Vật: {lay_icon(huyen)} {lay_ten(huyen)}")
+    st.caption(f"Theo dõi trực tiếp sức khỏe thảm thực vật từ vệ tinh NASA MODIS tháng {thang}/2025.")
 
-    col_map_opt1, col_map_opt2 = st.columns([13, 7])
+    # ==========================================
+    # MÀN SỐ THỰC VẬT (VEGETATION TELEMETRY HUD)
+    # ==========================================
+    val_ndvi = float(hien["ndvi"])
+    val_lai = float(hien["lai"])
+    val_evi = float(hien["evi"])
+    val_agri = float(hien.get("dat_nong_nghiep", 0.35)) * 100
+    val_tree = float(hien.get("cay_go", 0.5)) * 100
+    val_bare = float(hien.get("dat_trong", 0.01)) * 100
+
+    if val_ndvi >= 0.75:
+        tt_ndvi = ("Rất tươi tốt (Rừng / Lúa trổ đòng)", "#1b5e20", "#e8f5e9")
+    elif val_ndvi >= 0.65:
+        tt_ndvi = ("Phát triển tốt (Đang đẻ nhánh / Hoa màu)", "#2e7d32", "#edf7ed")
+    elif val_ndvi >= 0.50:
+        tt_ndvi = ("Sinh khối trung bình (Đất cát / Cây non)", "#f57f17", "#fffde7")
+    else:
+        tt_ndvi = ("Sinh khối thấp (Khô hạn / Sau thu hoạch)", "#d32f2f", "#ffebee")
+
+    st.markdown(f"""
+    <div style="background:#ffffff;border:1.5px solid #c8e6c9;border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <div style="font-weight:800;color:#1b5e20;font-size:16px;">
+                🌿 MÀN SỐ THỰC VẬT VỆ TINH MODIS — THÁNG {thang}/2025
+            </div>
+            <div style="background:{tt_ndvi[2]};color:{tt_ndvi[1]};border:1px solid {tt_ndvi[1]};padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;">
+                ● Trạng thái: {tt_ndvi[0]}
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;">
+            <div style="background:#f1f8e9;padding:10px 14px;border-radius:8px;border-left:4px solid #33691e;">
+                <div style="font-size:12px;color:#558b2f;font-weight:700;">CHỈ SỐ XANH NDVI</div>
+                <div style="font-size:26px;font-weight:900;color:#1b5e20;">{val_ndvi:.2f}</div>
+                <div style="font-size:11px;color:#689f38;">Thang chuẩn: 0.0 - 1.0</div>
+            </div>
+            <div style="background:#f9fbe7;padding:10px 14px;border-radius:8px;border-left:4px solid #827717;">
+                <div style="font-size:12px;color:#9e9d24;font-weight:700;">DIỆN TÍCH LÁ (LAI)</div>
+                <div style="font-size:26px;font-weight:900;color:#827717;">{val_lai:.1f}</div>
+                <div style="font-size:11px;color:#afb42b;">m² lá / m² đất</div>
+            </div>
+            <div style="background:#e8f5e9;padding:10px 14px;border-radius:8px;border-left:4px solid #2e7d32;">
+                <div style="font-size:12px;color:#2e7d32;font-weight:700;">SINH KHỐI EVI</div>
+                <div style="font-size:26px;font-weight:900;color:#1b5e20;">{val_evi:.2f}</div>
+                <div style="font-size:11px;color:#388e3c;">Đã khử nhiễu mây</div>
+            </div>
+            <div style="background:#f5f5f5;padding:10px 14px;border-radius:8px;border-left:4px solid #616161;">
+                <div style="font-size:12px;color:#616161;font-weight:700;">CƠ CẤU ĐẤT LÚA / MÀU</div>
+                <div style="font-size:26px;font-weight:900;color:#212121;">{val_agri:.0f}%</div>
+                <div style="font-size:11px;color:#757575;">Rừng cây: {val_tree:.0f}%</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_map_opt1, col_map_opt2 = st.columns([12, 8])
     with col_map_opt1:
         che_do_xem = st.radio(
             "Cấp độ phóng to:",
@@ -436,8 +490,8 @@ with tab_map:
         )
     with col_map_opt2:
         lop_nen = st.radio(
-            "Lớp bản đồ nền:",
-            ["🛰️ Ảnh Vệ Tinh Trái Đất (Google)", "🗺️ Bản Đồ Đường Xá (OSM)"],
+            "Lớp bản đồ hiển thị:",
+            ["🌿 Thảm Thực Vật NDVI (Vệ Tinh MODIS)", "🛰️ Ảnh Vệ Tinh Trái Đất (Google)", "🗺️ Bản Đồ Đường Xá (OSM)"],
             horizontal=True
         )
 
@@ -446,10 +500,19 @@ with tab_map:
         with open(geojson_path, "r", encoding="utf-8") as f:
             geojson_data = json.load(f)
 
+        # Lấy chỉ số NDVI của cả 3 huyện trong tháng đang chọn
+        ndvi_cac_huyen = {}
+        for _, r_thang in bang[bang["thang_so"] == thang].iterrows():
+            ndvi_cac_huyen[r_thang["huyen"]] = {
+                "ndvi": float(r_thang["ndvi"]),
+                "lai": float(r_thang["lai"]),
+                "evi": float(r_thang["evi"])
+            }
+
         # Tọa độ trung tâm cánh đồng lúa và ranh giới từng huyện
         THONG_TIN_MAP = {
             "Con Cuong": {
-                "center": [19.0450, 104.8950],  # Vòng cung thung lũng lúa sông Lam & TT Con Cuông
+                "center": [19.0450, 104.8950],
                 "zoom_sat": 13,
                 "bounds": [[18.7763, 104.5290], [19.3524, 105.0494]],
                 "vung": "Miền núi phía Tây (sát Vườn Quốc Gia Pù Mát)",
@@ -457,7 +520,7 @@ with tab_map:
                 "dac_diem": "Độ dốc lớn, thung lũng sông uốn lượn, rừng đầu nguồn Pù Mát."
             },
             "Nghi Loc": {
-                "center": [18.7980, 105.6200],  # Cánh đồng cát và TT Quán Hành
+                "center": [18.7980, 105.6200],
                 "zoom_sat": 13,
                 "bounds": [[18.6880, 105.4669], [18.8978, 105.7575]],
                 "vung": "Vùng ven biển Đông & Bán sơn địa",
@@ -465,7 +528,7 @@ with tab_map:
                 "dac_diem": "Đất cát pha ven biển, cồn cát ven sông Cấm đổ ra vịnh Cửa Lò."
             },
             "Yen Thanh": {
-                "center": [19.0076, 105.4475],  # Vựa lúa trung tâm quanh TT Yên Thành & Kênh Vách Bắc
+                "center": [19.0076, 105.4475],
                 "zoom_sat": 13,
                 "bounds": [[18.8766, 105.2981], [19.1659, 105.5801]],
                 "vung": "Vựa lúa đồng bằng trung tâm Nghệ An",
@@ -476,7 +539,7 @@ with tab_map:
 
         h_info = THONG_TIN_MAP.get(huyen, THONG_TIN_MAP["Yen Thanh"])
 
-        # 1. Khởi tạo bản đồ: Đặt camera và zoom theo chế độ người dùng chọn
+        is_ndvi_layer = lop_nen.startswith("🌿")
         is_sat_layer = lop_nen.startswith("🛰️")
 
         if che_do_xem.startswith("🔎"):
@@ -489,22 +552,39 @@ with tab_map:
             map_loc = [19.2, 104.9]
             map_zoom = 8
 
-        if is_sat_layer:
-            # Lớp Google Satellite Hybrid siêu nét, có nhãn địa danh tiếng Việt
-            m = folium.Map(
-                location=map_loc,
-                zoom_start=map_zoom,
-                tiles="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-                attr="Google Satellite Hybrid"
-            )
-        else:
-            m = folium.Map(
-                location=map_loc,
-                zoom_start=map_zoom,
-                tiles="OpenStreetMap"
-            )
+        # Khởi tạo bản đồ Folium với giới hạn chặt chẽ CHỈ TRONG TỈNH NGHỆ AN (max_bounds=True)
+        m = folium.Map(
+            location=map_loc,
+            zoom_start=map_zoom,
+            min_zoom=8,
+            max_zoom=18,
+            max_bounds=True,
+            min_lat=18.45,
+            max_lat=20.10,
+            min_lon=103.75,
+            max_lon=106.10,
+            tiles="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" if is_sat_layer else "OpenStreetMap",
+            attr="Google Satellite Hybrid" if is_sat_layer else "OpenStreetMap"
+        )
 
-        # 2. Thêm khung bao toàn tỉnh Nghệ An
+        # 1. Mặt nạ che tối vùng ngoài Nghệ An (chỉ hiển thị rõ địa phận bên trong tỉnh Nghệ An)
+        mask_path = "data/raw/mat_na_ngoai_nghe_an.geojson"
+        if os.path.exists(mask_path):
+            with open(mask_path, "r", encoding="utf-8") as mf:
+                mask_data = json.load(mf)
+            folium.GeoJson(
+                mask_data,
+                name="Vùng ngoài Nghệ An (Làm mờ)",
+                style_function=lambda x: {
+                    'fillColor': '#0b0f19' if is_sat_layer else '#475569',
+                    'color': 'none',
+                    'weight': 0,
+                    'fillOpacity': 0.65 if is_sat_layer else 0.45
+                },
+                interactive=False
+            ).add_to(m)
+
+        # 2. Đường viền ranh giới toàn tỉnh Nghệ An nổi bật
         tinh_path = "data/raw/nghe_an_tinh.geojson"
         if os.path.exists(tinh_path):
             with open(tinh_path, "r", encoding="utf-8") as tf:
@@ -514,30 +594,53 @@ with tab_map:
                 name="Ranh giới Tỉnh Nghệ An",
                 style_function=lambda x: {
                     'fillColor': 'transparent',
-                    'color': '#ffffff' if is_sat_layer else '#2e7d32',
-                    'weight': 2.0,
-                    'dashArray': '6, 6',
+                    'color': '#ffea00' if is_sat_layer else '#1b5e20',
+                    'weight': 2.5,
+                    'dashArray': '5, 5',
                     'fillOpacity': 0.0
                 },
-                tooltip="Ranh giới Tỉnh Nghệ An"
+                tooltip="Địa phận Tỉnh Nghệ An (Khung giới hạn)"
             ).add_to(m)
 
-        # 3. Vẽ ranh giới huyện: Khi xem vệ tinh, BỎ HẲN MÀU TÔ (fillOpacity=0) để nhìn xuyên thấu xuống cánh đồng
+        # 2. Hàm gán màu theo Chỉ số Thực vật NDVI hoặc Bản đồ vệ tinh
+        def mau_ndvi(val):
+            if val >= 0.75:
+                return '#1b5e20'   # Xanh sẫm rất tốt
+            elif val >= 0.65:
+                return '#2e7d32'   # Xanh lá tốt
+            elif val >= 0.50:
+                return '#fbc02d'   # Vàng chanh trung bình
+            else:
+                return '#e65100'   # Cam đỏ khô hạn
+
         def style_function(feature):
             ten_h = feature['properties'].get('ADM2_NAME', '')
-            if ten_h == huyen:
+            val_h_ndvi = ndvi_cac_huyen.get(ten_h, {}).get("ndvi", 0.5)
+
+            if is_ndvi_layer:
+                # Tô màu sinh thái theo chỉ số thực vật NDVI
+                is_selected = (ten_h == huyen)
                 return {
-                    'fillColor': 'transparent' if is_sat_layer else '#1b5e20',
-                    'color': '#00e676' if is_sat_layer else '#0d3810',
-                    'weight': 4.0 if is_sat_layer else 3.0,
-                    'fillOpacity': 0.0 if is_sat_layer else 0.65
+                    'fillColor': mau_ndvi(val_h_ndvi),
+                    'color': '#000000' if is_selected else '#424242',
+                    'weight': 3.5 if is_selected else 1.5,
+                    'fillOpacity': 0.70 if is_selected else 0.45
+                }
+            elif is_sat_layer:
+                # Ảnh vệ tinh: không tô màu che khuất, viền sáng
+                return {
+                    'fillColor': 'transparent',
+                    'color': '#00e676' if ten_h == huyen else '#ffea00',
+                    'weight': 4.0 if ten_h == huyen else 1.8,
+                    'fillOpacity': 0.0
                 }
             else:
+                # Giao thông OSM
                 return {
-                    'fillColor': 'transparent' if is_sat_layer else '#ffb74d',
-                    'color': '#ffea00' if is_sat_layer else '#e65100',
-                    'weight': 1.8,
-                    'fillOpacity': 0.0 if is_sat_layer else 0.35
+                    'fillColor': '#1b5e20' if ten_h == huyen else '#ffb74d',
+                    'color': '#0d3810' if ten_h == huyen else '#e65100',
+                    'weight': 3.0 if ten_h == huyen else 1.5,
+                    'fillOpacity': 0.65 if ten_h == huyen else 0.35
                 }
 
         folium.GeoJson(
@@ -547,33 +650,55 @@ with tab_map:
             tooltip=folium.GeoJsonTooltip(fields=['ADM2_NAME'], aliases=['Huyện:'])
         ).add_to(m)
 
-        # 4. Gắn nhãn tên huyện to rõ trên bản đồ
+        # 3. Gắn nhãn ghim hiển thị trực tiếp Màn số NDVI trên bản đồ
         for k_h, info in THONG_TIN_MAP.items():
             is_active = (k_h == huyen)
-            bg_badge = "#00c853" if is_active else "#ff6d00"
+            h_ndvi_val = ndvi_cac_huyen.get(k_h, {}).get("ndvi", 0.5)
+
+            if is_ndvi_layer:
+                badge_bg = mau_ndvi(h_ndvi_val)
+                label_text = f"{lay_icon(k_h)} {lay_ten(k_h)} · NDVI {h_ndvi_val:.2f}"
+            else:
+                badge_bg = "#00c853" if is_active else "#ff6d00"
+                label_text = f"{lay_icon(k_h)} {lay_ten(k_h)} {'★ Đang chọn' if is_active else ''}"
+
             border_badge = "2.5px solid #ffffff"
             shadow_badge = "box-shadow: 0 0 14px rgba(0, 230, 118, 1);" if is_active else "box-shadow: 0 2px 6px rgba(0,0,0,0.5);"
+
             folium.Marker(
                 location=info["center"],
                 icon=folium.DivIcon(
                     html=f"""
-                    <div style="background:{bg_badge};color:white;padding:5px 12px;border-radius:16px;
-                                font-size:13px;font-weight:800;white-space:nowrap;border:{border_badge};{shadow_badge}">
-                        {lay_icon(k_h)} {lay_ten(k_h)} {'★ Đang chọn' if is_active else ''}
+                    <div style="background:{badge_bg};color:white;padding:5px 12px;border-radius:16px;
+                                font-size:12px;font-weight:800;white-space:nowrap;border:{border_badge};{shadow_badge}">
+                        {label_text}
                     </div>
                     """
                 )
             ).add_to(m)
 
-        # 5. Nếu chọn toàn huyện hoặc toàn tỉnh thì căn bounds vừa vặn
         if che_do_xem.startswith("🌾") and huyen in THONG_TIN_MAP:
             m.fit_bounds(THONG_TIN_MAP[huyen]["bounds"])
         elif che_do_xem.startswith("🌐"):
-            m.fit_bounds([[18.5, 103.8], [19.8, 105.8]])
+            m.fit_bounds([[18.55, 103.88], [19.99, 105.98]])
 
         st_folium(m, height=480, use_container_width=True)
 
-        # 6. Thẻ hồ sơ địa lý của huyện đang chọn
+        # 4. Thanh Chú Giải Thang Đo Thực Vật NDVI chuẩn quốc tế
+        if is_ndvi_layer:
+            st.markdown("""
+            <div style="background:#ffffff;border:1px solid #e0e0e0;border-radius:8px;padding:8px 14px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                <span style="font-size:12px;font-weight:700;color:#37474f;">📊 THANG ĐO CHỈ SỐ XANH THỰC VẬT (NDVI):</span>
+                <div style="display:flex;align-items:center;gap:12px;font-size:12px;">
+                    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;background:#e65100;border-radius:3px;display:inline-block;"></span> < 0.50: Khô hạn / Đất trống</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;background:#fbc02d;border-radius:3px;display:inline-block;"></span> 0.50 - 0.65: Trung bình</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;background:#2e7d32;border-radius:3px;display:inline-block;"></span> 0.65 - 0.75: Cây trồng tốt</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:14px;height:14px;background:#1b5e20;border-radius:3px;display:inline-block;"></span> ≥ 0.75: Rất tươi tốt / Rừng</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # 5. Thẻ hồ sơ địa lý của huyện đang chọn
         st.markdown(f"""
         <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:12px 16px;margin-top:10px;">
             <div style="font-weight:700;color:#1e293b;font-size:15px;margin-bottom:4px;">
