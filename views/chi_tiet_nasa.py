@@ -85,13 +85,27 @@ def _ve_chuoi_thoi_gian_chuyen_nghiep(
             hovertemplate=f"<b>Năm {y} · %{{x}}</b>: %{{y:.1f}} {don_vi}<extra></extra>",
         )
 
-    # Đánh dấu tháng hiện tại bằng vạch dọc
-    fig.add_vline(
-        x=f"T{int(thang_hien_tai)}",
+    # Đánh dấu tháng hiện tại bằng vạch dọc (dùng add_shape + add_annotation tránh lỗi categorical của Plotly)
+    x_cur = f"T{int(thang_hien_tai)}"
+    fig.add_shape(
+        type="line",
+        x0=x_cur,
+        x1=x_cur,
+        y0=0,
+        y1=1,
+        yref="paper",
         line=dict(color="#0F172A", width=1.5, dash="dot"),
-        annotation_text=f"Tháng {thang_hien_tai} (Hiện tại)",
-        annotation_position="top right",
-        annotation_font=dict(size=10.5, color="#0F172A", weight="bold"),
+    )
+    fig.add_annotation(
+        x=x_cur,
+        y=1.02,
+        yref="paper",
+        text=f"T{int(thang_hien_tai)} (Hiện tại)",
+        showarrow=False,
+        xanchor="center",
+        yanchor="bottom",
+        font=dict(size=10, color="#0F172A", weight="bold"),
+        bgcolor="rgba(255, 255, 255, 0.85)",
     )
 
     fig.update_layout(
