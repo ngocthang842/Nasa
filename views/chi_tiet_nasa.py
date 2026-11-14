@@ -1,6 +1,7 @@
 """Các trang chuyên sâu theo từng chỉ số Viễn thám NASA (NDVI, SMAP, GPM, LST, Công thức, API).
 Thiết kế theo chuẩn Hệ thống Phân tích Môi trường NASA (NEDA) & Vựa lúa Yên Thành (Nghệ An).
-Bố cục hiện đại:
+Tính năng mới:
+- Bộ lọc Thời gian Thông minh: Cho phép chọn Năm (2024, 2025, 2026) & Tháng (T1–T12) để xem lại dữ liệu cũ/hiện tại
 - Hàng 1: Bộ 3 Thẻ KPI, Đánh giá Nông học & Thang đo chuẩn quốc tế
 - Hàng 2: Biểu đồ Chuyên sâu Toàn chiều rộng (Full-Width, Spline Area, Combo Dual-Axis, Bar Chart không đè chữ)
 - Hàng 3: Bảng Ma trận Số liệu Viễn thám 12 Tháng đối chiếu Đa năm (2024–2026)
@@ -17,6 +18,93 @@ from views import du_lieu
 from views.ve_tinh import hien_ve_tinh, CUM_XA_YEN_THANH
 from views.chung import tieu_de, ve, kpi_the
 
+# Icon chu kỳ nông học 12 tháng của lúa Yên Thành
+ICON_THANG = {
+    1: "🌱", 2: "🌿", 3: "🌾", 4: "🌸", 5: "✨",
+    6: "🌱", 7: "🌿", 8: "🌾", 9: "🌊", 10: "🚜", 11: "☀️", 12: "💧"
+}
+
+
+# =============================================================================
+# 0. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT VIỄN THÁM (NĂM & THÁNG TƯƠNG TÁC)
+# =============================================================================
+
+def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
+    """Thanh điều khiển chọn Năm và Tháng khảo sát viễn thám tương tác.
+    Cho phép nông dân/cán bộ khuyến nông xem lại dữ liệu lịch sử các năm cũ (2024, 2025)
+    hoặc năm kế hoạch (2026), và tua nhanh qua 12 tháng sinh trưởng của cây lúa."""
+    nam_mac_dinh = ctx.get("nam", 2026)
+    thang_mac_dinh = ctx.get("thang", 4)
+    years = ctx.get("years", [2024, 2025, 2026])
+
+    key_nam = f"filter_nam_{cot_id}"
+    key_thang = f"filter_thang_{cot_id}"
+
+    if key_nam not in st.session_state:
+        st.session_state[key_nam] = nam_mac_dinh
+    if key_thang not in st.session_state:
+        st.session_state[key_thang] = thang_mac_dinh
+
+    with st.container(border=True):
+        c_yr, c_mo = st.columns([4.2, 7.8], gap="medium")
+        with c_yr:
+            st.markdown(
+                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '📅 1. Chọn Năm Khảo Sát (Dữ liệu Lịch sử & Kế hoạch):'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            nam_chon = st.segmented_control(
+                "Năm khảo sát:",
+                options=years,
+                default=st.session_state[key_nam],
+                format_func=lambda y: f"🌟 Năm {y} (Kế hoạch)" if y == 2026 else (f"📅 Năm {y} (Trước)" if y == 2025 else f"📜 Năm {y} (Lịch sử)"),
+                label_visibility="collapsed",
+                key=f"ctrl_nam_{cot_id}",
+            )
+            if nam_chon:
+                st.session_state[key_nam] = nam_chon
+
+        with c_mo:
+            st.markdown(
+                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
+                '🌿 2. Chọn Tháng Canh Tác (Soi chi tiết chu kỳ 12 tháng vụ lúa):'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            thang_chon = st.pills(
+                "Tháng khảo sát vụ lúa:",
+                options=list(range(1, 13)),
+                default=st.session_state[key_thang],
+                format_func=lambda m: f"T{m} {ICON_THANG.get(m, '')}",
+                label_visibility="collapsed",
+                key=f"ctrl_thang_{cot_id}",
+            )
+            if thang_chon:
+                st.session_state[key_thang] = thang_chon
+
+        cur_nam = int(st.session_state[key_nam])
+        cur_thang = int(st.session_state[key_thang])
+
+        # Phân loại vụ mùa
+        if cur_thang <= 5:
+            vu_str = "🌾 Vụ Chiêm Xuân (Vụ lúa chính số 1)"
+        elif cur_thang <= 9:
+            vu_str = "☀️ Vụ Hè Thu (Vụ chạy lũ & chống hạn)"
+        else:
+            vu_str = "🚜 Vụ Đông / Cày phơi ải đất"
+
+        tag_nam = "(Kế hoạch sản xuất)" if cur_nam == 2026 else "(Dữ liệu lưu trữ lịch sử)"
+        st.markdown(
+            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px;">'
+            f'  <div>📌 Đang khảo sát: <b style="color:#0F766E; font-size:12.5px;">Tháng {cur_thang}/{cur_nam}</b> {tag_nam} · <b style="color:#0F172A;">{vu_str}</b></div>'
+            f'  <div style="color:#64748B;">Huyện Yên Thành (Nghệ An) · NASA Earthdata & Thủy nông Ba Ra Đô Lương</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    return cur_nam, cur_thang
+
 
 # =============================================================================
 # 1. CÁC HÀM VẼ BIỂU ĐỒ CHUYÊN SÂU NÂNG CAO (FULL-WIDTH, KHÔNG ĐÈ CHỮ)
@@ -29,17 +117,13 @@ def _ve_bieu_do_spline_area(
     mau_fill,
     don_vi,
     thang_hien_tai=4,
+    nam_hien_tai=2026,
     nguong_an_toan=None,
     vach_canh_bao=None,
     he_so=1.0,
 ):
-    """Vẽ biểu đồ Spline Area Chart mềm mại cho NDVI và SMAP."""
+    """Vẽ biểu đồ Spline Area Chart mềm mại cho NDVI và SMAP, làm nổi bật Năm đang chọn."""
     fig = go.Figure()
-    nam_styles = {
-        2026: dict(width=3.8, color=mau_chinh),
-        2025: dict(width=2.4, color="#0284C7"),
-        2024: dict(width=1.8, color="#94A3B8", dash="dot"),
-    }
 
     # Dải ngưỡng sinh trưởng an toàn
     if nguong_an_toan:
@@ -65,7 +149,7 @@ def _ve_bieu_do_spline_area(
                 annotation_font=dict(size=10.5, color=vb.get("color", "#DC2626")),
             )
 
-    # Đường số liệu đa năm
+    # Đường số liệu đa năm, ưu tiên làm nổi bật Năm đang chọn
     for y in sorted(df_thang.year.unique()):
         sub = df_thang[df_thang.year == y].sort_values("month")
         if cot not in sub.columns:
@@ -73,16 +157,41 @@ def _ve_bieu_do_spline_area(
         y_data = sub[cot] * he_so
         x_data = [f"T{int(m)}" for m in sub.month]
 
-        is_cur_year = (y == 2026)
+        is_selected_year = (y == nam_hien_tai)
+        if is_selected_year:
+            style = dict(width=3.8, color=mau_chinh, dash="solid")
+            marker_size = 9
+            fill_mode = "tozeroy"
+            fill_col = mau_fill
+            name_str = f"🌟 Năm {y} (Đang xem)"
+        elif y == 2026:
+            style = dict(width=2.5, color="#0284C7", dash="solid")
+            marker_size = 6
+            fill_mode = "none"
+            fill_col = None
+            name_str = f"Năm {y} (Kế hoạch)"
+        elif y == 2025:
+            style = dict(width=2.2, color="#0F766E", dash="solid")
+            marker_size = 5
+            fill_mode = "none"
+            fill_col = None
+            name_str = f"Năm {y}"
+        else:
+            style = dict(width=1.8, color="#94A3B8", dash="dot")
+            marker_size = 5
+            fill_mode = "none"
+            fill_col = None
+            name_str = f"Năm {y}"
+
         fig.add_scatter(
             x=x_data,
             y=y_data,
-            name=f"Năm {y}{' (Kế hoạch)' if is_cur_year else ''}",
+            name=name_str,
             mode="lines+markers",
-            line=dict(shape="spline", smoothing=1.2, **nam_styles.get(y, {})),
-            fill="tozeroy" if is_cur_year else "none",
-            fillcolor=mau_fill if is_cur_year else None,
-            marker=dict(size=9 if is_cur_year else 6, symbol="circle"),
+            line=dict(shape="spline", smoothing=1.2, **style),
+            fill=fill_mode,
+            fillcolor=fill_col,
+            marker=dict(size=marker_size, symbol="circle"),
             hovertemplate=f"<b>Năm {y} · %{{x}}</b>: %{{y:.2f}} {don_vi}<extra></extra>",
         )
 
@@ -101,7 +210,7 @@ def _ve_bieu_do_spline_area(
         x=x_cur,
         y=1.02,
         yref="paper",
-        text=f"T{int(thang_hien_tai)} (Hiện tại)",
+        text=f"T{int(thang_hien_tai)} (Đang xem)",
         showarrow=False,
         xanchor="center",
         yanchor="bottom",
@@ -134,8 +243,8 @@ def _ve_bieu_do_spline_area(
     return fig
 
 
-def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4):
-    """Vẽ biểu đồ Vũ lượng Mưa GPM IMERG dạng CỘT (Bar Chart) kết hợp đường xu hướng."""
+def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4, nam_hien_tai=2026):
+    """Vẽ biểu đồ Vũ lượng Mưa GPM IMERG dạng CỘT (Bar Chart) cho Năm đang chọn."""
     fig = go.Figure()
 
     # Dải mưa an toàn cho lúa
@@ -158,29 +267,27 @@ def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4):
         annotation_font=dict(size=10.5, color="#DC2626"),
     )
 
-    # Lấy dữ liệu năm 2026 vẽ Bar Chart
-    sub_2026 = df_thang[df_thang.year == 2026].sort_values("month")
-    if not sub_2026.empty:
-        x_2026 = [f"T{int(m)}" for m in sub_2026.month]
-        y_2026 = sub_2026["mua_mm"].values
+    # Lấy dữ liệu Năm đang chọn vẽ Bar Chart
+    sub_sel = df_thang[df_thang.year == nam_hien_tai].sort_values("month")
+    if not sub_sel.empty and "mua_mm" in sub_sel.columns:
+        x_bar = [f"T{int(m)}" for m in sub_sel.month]
+        y_bar = sub_sel["mua_mm"].values
 
         # Đổi màu cột bão lũ (≥250mm) sang đỏ cam
-        bar_colors = ["#DC2626" if v >= 250 else ("#0284C7" if m == thang_hien_tai else "#38BDF8") for m, v in zip(sub_2026.month, y_2026)]
+        bar_colors = ["#DC2626" if v >= 250 else ("#0284C7" if m == thang_hien_tai else "#38BDF8") for m, v in zip(sub_sel.month, y_bar)]
 
         fig.add_bar(
-            x=x_2026,
-            y=y_2026,
-            name="Vũ lượng 2026 (Kế hoạch)",
+            x=x_bar,
+            y=y_bar,
+            name=f"Vũ lượng Năm {nam_hien_tai} (Đang xem)",
             marker=dict(color=bar_colors, line=dict(color="#0284C7", width=1)),
-            hovertemplate="<b>Năm 2026 · %{x}</b>: %{y:.0f} mm<extra></extra>",
+            hovertemplate=f"<b>Năm {nam_hien_tai} · %{{x}}</b>: %{{y:.0f}} mm<extra></extra>",
         )
 
-    # Đường xu hướng năm 2025 và 2024 để đối chiếu
-    nam_styles = {
-        2025: dict(color="#0F766E", width=2.4),
-        2024: dict(color="#94A3B8", width=1.8, dash="dot"),
-    }
-    for y in [2025, 2024]:
+    # Các năm còn lại vẽ đường line đối chiếu
+    nam_others = [y for y in sorted(df_thang.year.unique()) if y != nam_hien_tai]
+    other_colors = {2026: "#0284C7", 2025: "#0F766E", 2024: "#94A3B8"}
+    for y in nam_others:
         sub_y = df_thang[df_thang.year == y].sort_values("month")
         if not sub_y.empty and "mua_mm" in sub_y.columns:
             fig.add_scatter(
@@ -188,7 +295,7 @@ def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4):
                 y=sub_y["mua_mm"],
                 name=f"Năm {y}",
                 mode="lines+markers",
-                line=dict(shape="spline", **nam_styles.get(y, {})),
+                line=dict(shape="spline", color=other_colors.get(y, "#94A3B8"), width=2.0),
                 marker=dict(size=6),
                 hovertemplate=f"<b>Năm {y} · %{{x}}</b>: %{{y:.0f}} mm<extra></extra>",
             )
@@ -208,7 +315,7 @@ def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4):
         x=x_cur,
         y=1.02,
         yref="paper",
-        text=f"T{int(thang_hien_tai)} (Hiện tại)",
+        text=f"T{int(thang_hien_tai)} (Đang xem)",
         showarrow=False,
         xanchor="center",
         yanchor="bottom",
@@ -241,8 +348,8 @@ def _ve_bieu_do_mua_bar(df_thang, thang_hien_tai=4):
     return fig
 
 
-def _ve_bieu_do_nhiet_combo(df_thang, thang_hien_tai=4):
-    """Vẽ biểu đồ COMBO 2 TRỤC Y: Đường Nhiệt độ Tmax (°C) + Cột Số ngày Gió Lào (ngày)."""
+def _ve_bieu_do_nhiet_combo(df_thang, thang_hien_tai=4, nam_hien_tai=2026):
+    """Vẽ biểu đồ COMBO 2 TRỤC Y cho Năm đang chọn: Đường Tmax (°C) + Cột Số ngày Gió Lào."""
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     # Vạch cảnh báo gió Lào táp bông lúa ≥35°C
@@ -255,35 +362,48 @@ def _ve_bieu_do_nhiet_combo(df_thang, thang_hien_tai=4):
         secondary_y=False,
     )
 
-    # 1. Cột Số ngày Gió Lào (Trục Y phụ - phải)
-    sub_2026 = df_thang[df_thang.year == 2026].sort_values("month")
-    if not sub_2026.empty and "nong35" in sub_2026.columns:
+    # 1. Cột Số ngày Gió Lào (Trục Y phụ - phải) cho Năm đang chọn
+    sub_sel = df_thang[df_thang.year == nam_hien_tai].sort_values("month")
+    if not sub_sel.empty and "nong35" in sub_sel.columns:
         fig.add_bar(
-            x=[f"T{int(m)}" for m in sub_2026.month],
-            y=sub_2026["nong35"],
-            name="Số ngày Gió Lào ≥35°C (2026)",
+            x=[f"T{int(m)}" for m in sub_sel.month],
+            y=sub_sel["nong35"],
+            name=f"Gió Lào ≥35°C ({nam_hien_tai})",
             marker=dict(color="rgba(251, 146, 60, 0.45)", line=dict(color="#EA580C", width=1)),
             secondary_y=True,
-            hovertemplate="<b>Năm 2026 · %{x}</b>: %{y:.0f} ngày gió Lào<extra></extra>",
+            hovertemplate=f"<b>Năm {nam_hien_tai} · %{{x}}</b>: %{{y:.0f}} ngày gió Lào<extra></extra>",
         )
 
     # 2. Đường Nhiệt độ Tmax của các năm (Trục Y chính - trái)
-    nam_styles = {
-        2026: dict(width=3.8, color="#EA580C"),
-        2025: dict(width=2.4, color="#0284C7"),
-        2024: dict(width=1.8, color="#94A3B8", dash="dot"),
-    }
     for y in sorted(df_thang.year.unique()):
         sub_y = df_thang[df_thang.year == y].sort_values("month")
         if "tmax" not in sub_y.columns:
             continue
+        is_sel = (y == nam_hien_tai)
+        if is_sel:
+            st_line = dict(width=3.8, color="#EA580C")
+            m_size = 9
+            nm = f"🌟 Tmax {y} (Đang xem)"
+        elif y == 2026:
+            st_line = dict(width=2.5, color="#0284C7")
+            m_size = 6
+            nm = f"Tmax {y} (Kế hoạch)"
+        elif y == 2025:
+            st_line = dict(width=2.2, color="#0F766E")
+            m_size = 5
+            nm = f"Tmax {y}"
+        else:
+            st_line = dict(width=1.8, color="#94A3B8", dash="dot")
+            m_size = 5
+            nm = f"Tmax {y}"
+
         fig.add_scatter(
             x=[f"T{int(m)}" for m in sub_y.month],
             y=sub_y["tmax"],
-            name=f"Tmax {y}{' (Kế hoạch)' if y == 2026 else ''}",
+            name=nm,
             mode="lines+markers",
-            line=dict(shape="spline", smoothing=1.2, **nam_styles.get(y, {})),
-            marker=dict(size=8 if y == 2026 else 5),
+            line=dict(shape="spline", smoothing=1.2, **st_line),
+            marker=dict(size=m_size),
             secondary_y=False,
             hovertemplate=f"<b>Nhiệt Tmax {y} · %{{x}}</b>: %{{y:.1f}}°C<extra></extra>",
         )
@@ -303,7 +423,7 @@ def _ve_bieu_do_nhiet_combo(df_thang, thang_hien_tai=4):
         x=x_cur,
         y=1.02,
         yref="paper",
-        text=f"T{int(thang_hien_tai)} (Hiện tại)",
+        text=f"T{int(thang_hien_tai)} (Đang xem)",
         showarrow=False,
         xanchor="center",
         yanchor="bottom",
@@ -354,6 +474,7 @@ def _hien_bang_ma_tran_12_thang(
     don_vi,
     he_so=1.0,
     thang_hien_tai=4,
+    nam_hien_tai=2026,
     format_str="{:.1f}",
     danh_gia_fn=None,
 ):
@@ -383,14 +504,28 @@ def _hien_bang_ma_tran_12_thang(
 
     rows_html = ""
     for y in reversed(years):
-        is_plan = (y == 2026)
+        is_sel_yr = (y == nam_hien_tai)
         row_vals = data_dict.get(y, [])
         tds = ""
         for m, v in enumerate(row_vals, start=1):
             is_cur = (m == thang_hien_tai)
-            bg = "#ECFDF5" if is_cur else ("#FFFFFF" if is_plan else "#F8FAFC")
-            fw = "800" if is_cur else ("700" if is_plan else "500")
-            color = "#0F766E" if is_cur else ("#0F172A" if is_plan else "#64748B")
+            if is_sel_yr and is_cur:
+                bg = "#CCFBF1"  # Teal đậm hơn cho giao điểm Năm đang xem x Tháng đang xem
+                fw = "850"
+                color = "#0F766E"
+            elif is_cur:
+                bg = "#ECFDF5"
+                fw = "800"
+                color = "#0F766E"
+            elif is_sel_yr:
+                bg = "#F0FDFA"
+                fw = "750"
+                color = "#0F172A"
+            else:
+                bg = "#FFFFFF" if y == 2026 else "#F8FAFC"
+                fw = "500"
+                color = "#64748B"
+
             v_str = format_str.format(v) if not np.isnan(v) else "—"
             tds += f'<td style="padding:7px 4px; text-align:center; font-size:11.5px; font-weight:{fw}; color:{color}; background:{bg}; border-bottom:1px solid #E2E8F0;">{v_str}</td>'
 
@@ -398,14 +533,16 @@ def _hien_bang_ma_tran_12_thang(
         tb_str = format_str.format(tb_nam) if not np.isnan(tb_nam) else "—"
         td_tb = f'<td style="padding:7px 6px; text-align:center; font-size:11.5px; font-weight:800; color:#0F172A; background:#F1F5F9; border-bottom:1px solid #E2E8F0;">{tb_str}</td>'
 
-        nhan_nam = f"<b>Năm {y}</b> {'(Kế hoạch)' if is_plan else ''}"
-        rows_html += f'<tr><td style="padding:7px 8px; font-size:11.5px; color:#1E293B; background:#F8FAFC; border-bottom:1px solid #E2E8F0;">{nhan_nam}</td>{tds}{td_tb}</tr>'
+        nhan_nam = f"<b>Năm {y}</b> {'⭐ (Đang xem)' if is_sel_yr else ('(Kế hoạch)' if y == 2026 else '')}"
+        bg_row_header = "#CCFBF1" if is_sel_yr else "#F8FAFC"
+        rows_html += f'<tr><td style="padding:7px 8px; font-size:11.5px; color:#1E293B; background:{bg_row_header}; border-bottom:1px solid #E2E8F0;">{nhan_nam}</td>{tds}{td_tb}</tr>'
 
+    # Hàng đánh giá nông học cho Năm đang chọn
     row_danh_gia = ""
-    if danh_gia_fn and 2026 in data_dict:
+    if danh_gia_fn and nam_hien_tai in data_dict:
         td_dg = ""
-        vals_2026 = data_dict[2026]
-        for m, v in enumerate(vals_2026, start=1):
+        vals_sel = data_dict[nam_hien_tai]
+        for m, v in enumerate(vals_sel, start=1):
             is_cur = (m == thang_hien_tai)
             if not np.isnan(v):
                 badge_text, badge_bg, badge_col = danh_gia_fn(v, m)
@@ -418,7 +555,7 @@ def _hien_bang_ma_tran_12_thang(
                 f'{badge_text}'
                 f'</span></td>'
             )
-        row_danh_gia = f'<tr><td style="padding:6px 8px; font-size:11px; font-weight:750; color:#475569; background:#F8FAFC; border-bottom:1px solid #E2E8F0;">Đánh giá Vụ Lúa</td>{td_dg}<td style="background:#F1F5F9; border-bottom:1px solid #E2E8F0;"></td></tr>'
+        row_danh_gia = f'<tr><td style="padding:6px 8px; font-size:11px; font-weight:750; color:#475569; background:#F8FAFC; border-bottom:1px solid #E2E8F0;">Đánh giá Vụ Năm {nam_hien_tai}</td>{td_dg}<td style="background:#F1F5F9; border-bottom:1px solid #E2E8F0;"></td></tr>'
 
     html_table = f"""
     <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:10px; overflow-x:auto; margin-top:12px; box-shadow:0 1px 3px rgba(0,0,0,0.02);">
@@ -427,7 +564,7 @@ def _hien_bang_ma_tran_12_thang(
           📋 Bảng Ma trận Số liệu Viễn thám 12 Tháng ({don_vi}) · Đối chiếu Đa năm Yên Thành
         </div>
         <div style="font-size:11px; color:#0F766E; font-weight:700;">
-          ⭐ Cột Tháng {thang_hien_tai} đang được chọn khảo sát
+          ⭐ Cột Tháng {thang_hien_tai} / Năm {nam_hien_tai} đang được chọn khảo sát
         </div>
       </div>
       <table style="width:100%; border-collapse:collapse; min-width:680px;">
@@ -452,10 +589,8 @@ def _hien_bang_ma_tran_12_thang(
 # 3. HÀM HIỂN THỊ KHU VỰC BẢN ĐỒ VỆ TINH THEO YÊU CẦU (ON-DEMAND INTERACTIVE)
 # =============================================================================
 
-def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
-    """Khu vực tương tác Bản đồ Viễn thám & Telemetry 4 Cụm Xã."""
-    nam = ctx["nam"]
-    thang = ctx.get("thang", 4)
+def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop, nam=2026, thang=4):
+    """Khu vực tương tác Bản đồ Viễn thám & Telemetry 4 Cụm Xã theo Năm và Tháng đã chọn."""
     session_key = f"hien_ban_do_{cot_id}_{nam}_{thang}"
 
     if session_key not in st.session_state:
@@ -475,7 +610,7 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
                       Bản đồ Viễn thám Không gian Vệ tinh & Telemetry 4 Cụm Xã Thâm Canh
                     </div>
                     <div style="font-size:11.5px; color:#64748B; margin-top:1px;">
-                      Giám sát không gian thực địa tại Cụm Bắc (Đô Thành), Lòng chảo, Cụm Nam (Bảo Thành) và Cụm Tây (Mỹ Thành)
+                      Giám sát không gian thực địa tại Cụm Bắc (Đô Thành), Lòng chảo, Cụm Nam (Bảo Thành) và Cụm Tây (Mỹ Thành) · <b>Tháng {thang}/{nam}</b>
                     </div>
                   </div>
                 </div>
@@ -497,17 +632,19 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
                 unsafe_allow_html=True,
             )
 
-            # Bản đồ vệ tinh Folium
+            # Bản đồ vệ tinh Folium cập nhật theo Năm và Tháng đã chọn
             ctx_sub = dict(ctx)
+            ctx_sub["nam"] = nam
+            ctx_sub["thang"] = thang
             ctx_sub["lop_hien_tai"] = ten_lop
             hien_ve_tinh(ctx_sub)
 
             # Telemetry 4 cụm xã dạng grid cards
             st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
             st.markdown(
-                '<div style="font-size:12.5px; font-weight:800; color:#0F172A; margin-bottom:6px;">'
-                '📡 Telemetry Quan trắc Viễn thám tại 4 Trạm Cụm Xã Yên Thành:'
-                '</div>',
+                f'<div style="font-size:12.5px; font-weight:800; color:#0F172A; margin-bottom:6px;">'
+                f'📡 Telemetry Quan trắc Viễn thám tại 4 Trạm Cụm Xã Yên Thành (Tháng {thang}/{nam}):'
+                f'</div>',
                 unsafe_allow_html=True,
             )
             cols_cum = st.columns(4, gap="small")
@@ -539,7 +676,7 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
                         """,
                         unsafe_allow_html=True,
                     )
-            st.caption("💡 Bấm nút **'🛰️ Xem Chi tiết trên Bản đồ'** ở góc phải để mở Bản đồ Vệ tinh GIS & Telemetry viễn thám chuyên sâu.")
+            st.caption(f"💡 Bấm nút **'🛰️ Xem Chi tiết trên Bản đồ'** ở góc phải để mở Bản đồ Vệ tinh GIS & Telemetry viễn thám Tháng {thang}/{nam}.")
 
 
 # =============================================================================
@@ -547,8 +684,12 @@ def _hien_khu_vuc_ban_do_ve_tinh(ctx, cot_id, ten_lop, ten_chi_so, icon_lop):
 # =============================================================================
 def hien_ndvi(ctx):
     dl = ctx["dl"]
-    nam, thang = ctx["nam"], ctx.get("thang", 4)
     vung = "Yên Thành"
+
+    # 1. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT
+    nam, thang = _thanh_dieu_khien_thoi_gian(ctx, cot_id="ndvi")
+
+    # 2. TIÊU ĐỀ
     tieu_de(vung, thang, nam, "Phân tích Thảm Thực vật & Sức khỏe Lúa (NDVI MODIS)", False)
 
     dl_yt = dl[dl.huyen == vung]
@@ -619,10 +760,10 @@ def hien_ndvi(ctx):
     # HÀNG 2: BIỂU ĐỒ SPLINE AREA TOÀN CHIỀU RỘNG (FULL WIDTH)
     with st.container(border=True):
         st.markdown(
-            """
+            f"""
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
-                📈 Chuỗi Thời Gian 12 Tháng Chỉ Số NDVI MODIS (Đối Chiếu Đa Năm 2024–2026)
+                📈 Chuỗi Thời Gian 12 Tháng Chỉ Số NDVI MODIS (Đối Chiếu Đa Năm · Đang Soi Năm {nam})
               </div>
               <div style="font-size:11px; color:#64748B;">Đường cong sinh học sinh khối tán lá lúa nước Yên Thành</div>
             </div>
@@ -636,6 +777,7 @@ def hien_ndvi(ctx):
             mau_fill="rgba(22, 163, 74, 0.08)",
             don_vi="NDVI",
             thang_hien_tai=thang,
+            nam_hien_tai=nam,
             nguong_an_toan=(0.60, 0.85, "Dải sinh khối tối ưu (0.60–0.85)"),
             vach_canh_bao=[dict(val=0.40, label="Ngưỡng mạ non/đất ải (0.40)", color="#EAB308")],
         )
@@ -656,6 +798,7 @@ def hien_ndvi(ctx):
         don_vi="NDVI",
         he_so=1.0,
         thang_hien_tai=thang,
+        nam_hien_tai=nam,
         format_str="{:.2f}",
         danh_gia_fn=dg_ndvi,
     )
@@ -668,6 +811,8 @@ def hien_ndvi(ctx):
         ten_lop="🌿 Sức khỏe Lúa (NDVI)",
         ten_chi_so="NDVI MODIS",
         icon_lop="🌿",
+        nam=nam,
+        thang=thang,
     )
 
 
@@ -676,8 +821,12 @@ def hien_ndvi(ctx):
 # =============================================================================
 def hien_do_am(ctx):
     dl = ctx["dl"]
-    nam, thang = ctx["nam"], ctx.get("thang", 4)
     vung = "Yên Thành"
+
+    # 1. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT
+    nam, thang = _thanh_dieu_khien_thoi_gian(ctx, cot_id="smap")
+
+    # 2. TIÊU ĐỀ
     tieu_de(vung, thang, nam, "Giám sát Độ Ẩm Đất & Cân bằng Nước Ruộng Lúa (SMAP L-band)", False)
 
     dl_yt = dl[dl.huyen == vung]
@@ -735,10 +884,10 @@ def hien_do_am(ctx):
     # HÀNG 2: BIỂU ĐỒ SPLINE AREA TOÀN CHIỀU RỘNG (FULL WIDTH)
     with st.container(border=True):
         st.markdown(
-            """
+            f"""
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
-                💧 Chuỗi 12 Tháng Độ Ẩm Đất Tầng Rễ SMAP (Đối Chiếu Đa Năm 2024–2026)
+                💧 Chuỗi 12 Tháng Độ Ẩm Đất Tầng Rễ SMAP (Đối Chiếu Đa Năm · Đang Soi Năm {nam})
               </div>
               <div style="font-size:11px; color:#64748B;">Đo đạc viễn thám vi ba L-band NASA SMAP (0–100 cm)</div>
             </div>
@@ -752,6 +901,7 @@ def hien_do_am(ctx):
             mau_fill="rgba(2, 132, 199, 0.08)",
             don_vi="%",
             thang_hien_tai=thang,
+            nam_hien_tai=nam,
             nguong_an_toan=(25.0, 35.0, "Dải ẩm tối ưu ruộng lúa (25%–35%)"),
             vach_canh_bao=[dict(val=20.0, label="Ngưỡng hạn kiệt báo động (20%)", color="#DC2626")],
             he_so=100.0,
@@ -773,6 +923,7 @@ def hien_do_am(ctx):
         don_vi="%",
         he_so=100.0,
         thang_hien_tai=thang,
+        nam_hien_tai=nam,
         format_str="{:.1f}%",
         danh_gia_fn=dg_sm,
     )
@@ -785,6 +936,8 @@ def hien_do_am(ctx):
         ten_lop="💧 Độ ẩm Ruộng (SMAP)",
         ten_chi_so="SMAP L-band",
         icon_lop="💧",
+        nam=nam,
+        thang=thang,
     )
 
 
@@ -793,8 +946,12 @@ def hien_do_am(ctx):
 # =============================================================================
 def hien_luong_mua(ctx):
     dl = ctx["dl"]
-    nam, thang = ctx["nam"], ctx.get("thang", 4)
     vung = "Yên Thành"
+
+    # 1. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT
+    nam, thang = _thanh_dieu_khien_thoi_gian(ctx, cot_id="gpm")
+
+    # 2. TIÊU ĐỀ
     tieu_de(vung, thang, nam, "Giám sát Lượng Mưa Tích Lũy & Bão Lũ (NASA GPM IMERG)", False)
 
     dl_yt = dl[dl.huyen == vung]
@@ -847,17 +1004,17 @@ def hien_luong_mua(ctx):
     # HÀNG 2: BIỂU ĐỒ CỘT (BAR CHART) KẾT HỢP ĐƯỜNG XU HƯỚNG
     with st.container(border=True):
         st.markdown(
-            """
+            f"""
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
-                🌧️ Biểu Đồ Vũ Lượng Mưa Tích Lũy 12 Tháng (Bar Chart NASA GPM IMERG)
+                🌧️ Biểu Đồ Vũ Lượng Mưa Tích Lũy 12 Tháng (NASA GPM IMERG · Đang Soi Năm {nam})
               </div>
               <div style="font-size:11px; color:#64748B;">Cột màu đỏ cam cảnh báo tháng có nguy cơ bão lũ ngập úng (≥250 mm)</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        fig_mua = _ve_bieu_do_mua_bar(dl_yt, thang_hien_tai=thang)
+        fig_mua = _ve_bieu_do_mua_bar(dl_yt, thang_hien_tai=thang, nam_hien_tai=nam)
         ve(fig_mua, che_do="tuong_tac")
 
     # HÀNG 3: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
@@ -875,6 +1032,7 @@ def hien_luong_mua(ctx):
         don_vi="mm",
         he_so=1.0,
         thang_hien_tai=thang,
+        nam_hien_tai=nam,
         format_str="{:.0f} mm",
         danh_gia_fn=dg_mua,
     )
@@ -887,6 +1045,8 @@ def hien_luong_mua(ctx):
         ten_lop="🌧️ Lượng mưa (GPM)",
         ten_chi_so="NASA GPM IMERG",
         icon_lop="🌧️",
+        nam=nam,
+        thang=thang,
     )
 
 
@@ -895,8 +1055,12 @@ def hien_luong_mua(ctx):
 # =============================================================================
 def hien_nhiet_do(ctx):
     dl = ctx["dl"]
-    nam, thang = ctx["nam"], ctx.get("thang", 4)
     vung = "Yên Thành"
+
+    # 1. BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT
+    nam, thang = _thanh_dieu_khien_thoi_gian(ctx, cot_id="lst")
+
+    # 2. TIÊU ĐỀ
     tieu_de(vung, thang, nam, "Giám sát Nhiệt độ Bề mặt LST & Gió Lào Tây Nam (NASA POWER)", False)
 
     dl_yt = dl[dl.huyen == vung]
@@ -951,17 +1115,17 @@ def hien_nhiet_do(ctx):
     # HÀNG 2: BIỂU ĐỒ COMBO DUAL-AXIS (ĐƯỜNG NHIỆT ĐỘ + CỘT NGÀY GIÓ LÀO)
     with st.container(border=True):
         st.markdown(
-            """
+            f"""
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
-                🌡️ Biểu Đồ Tương Quan: Nhiệt Độ Tmax & Tần Suất Gió Lào (Combo Dual-Axis Chart)
+                🌡️ Biểu Đồ Tương Quan: Nhiệt Độ Tmax & Tần Suất Gió Lào (Combo Dual-Axis · Đang Soi Năm {nam})
               </div>
               <div style="font-size:11px; color:#64748B;">Trục trái: Nhiệt độ cực đại Tmax (°C) · Trục phải: Số ngày Gió Lào ≥35°C (ngày)</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        fig_tmax = _ve_bieu_do_nhiet_combo(dl_yt, thang_hien_tai=thang)
+        fig_tmax = _ve_bieu_do_nhiet_combo(dl_yt, thang_hien_tai=thang, nam_hien_tai=nam)
         ve(fig_tmax, che_do="tuong_tac")
 
     # HÀNG 3: BẢNG MA TRẬN SỐ LIỆU 12 THÁNG
@@ -981,6 +1145,7 @@ def hien_nhiet_do(ctx):
         don_vi="°C",
         he_so=1.0,
         thang_hien_tai=thang,
+        nam_hien_tai=nam,
         format_str="{:.1f}°C",
         danh_gia_fn=dg_tmax,
     )
@@ -993,6 +1158,8 @@ def hien_nhiet_do(ctx):
         ten_lop="🌡️ Nhiệt & Gió Lào",
         ten_chi_so="NASA POWER LST",
         icon_lop="🌡️",
+        nam=nam,
+        thang=thang,
     )
 
 
