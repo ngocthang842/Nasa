@@ -46,32 +46,35 @@ def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
         st.session_state[key_thang] = thang_mac_dinh
 
     with st.container(border=True):
-        c_yr, c_mo = st.columns([4.2, 7.8], gap="medium")
-        with c_yr:
+        col_y_lbl, col_y_val = st.columns([3.2, 8.8], gap="small")
+        with col_y_lbl:
             st.markdown(
-                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
-                '📅 1. Chọn Năm Khảo Sát (Dữ liệu Lịch sử & Kế hoạch):'
+                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
+                '📅 1. Chuỗi Năm Khảo Sát (2018–2026):'
                 '</div>',
                 unsafe_allow_html=True,
             )
-            nam_chon = st.segmented_control(
+        with col_y_val:
+            nam_chon = st.pills(
                 "Năm khảo sát:",
                 options=years,
                 default=st.session_state[key_nam],
-                format_func=lambda y: f"🌟 Năm {y} (Kế hoạch)" if y == 2026 else (f"📅 Năm {y} (Trước)" if y == 2025 else f"📜 Năm {y} (Lịch sử)"),
+                format_func=lambda y: f"🌟 Năm {y} (Kế hoạch)" if y == 2026 else (f"📅 {y}" if y >= 2024 else f"📜 {y}"),
                 label_visibility="collapsed",
                 key=f"ctrl_nam_{cot_id}",
             )
             if nam_chon:
-                st.session_state[key_nam] = nam_chon
+                st.session_state[key_nam] = int(nam_chon)
 
-        with c_mo:
+        col_m_lbl, col_m_val = st.columns([3.2, 8.8], gap="small")
+        with col_m_lbl:
             st.markdown(
-                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-bottom:4px;">'
-                '🌿 2. Chọn Tháng Canh Tác (Soi chi tiết chu kỳ 12 tháng vụ lúa):'
+                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
+                '🌿 2. Chu kỳ 12 Tháng Vụ Lúa:'
                 '</div>',
                 unsafe_allow_html=True,
             )
+        with col_m_val:
             thang_chon = st.pills(
                 "Tháng khảo sát vụ lúa:",
                 options=list(range(1, 13)),
@@ -81,7 +84,7 @@ def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
                 key=f"ctrl_thang_{cot_id}",
             )
             if thang_chon:
-                st.session_state[key_thang] = thang_chon
+                st.session_state[key_thang] = int(thang_chon)
 
         cur_nam = int(st.session_state[key_nam])
         cur_thang = int(st.session_state[key_thang])
@@ -94,11 +97,11 @@ def _thanh_dieu_khien_thoi_gian(ctx, cot_id):
         else:
             vu_str = "🚜 Vụ Đông / Cày phơi ải đất"
 
-        tag_nam = "(Kế hoạch sản xuất)" if cur_nam == 2026 else "(Dữ liệu lưu trữ lịch sử)"
+        tag_nam = "(Kế hoạch sản xuất)" if cur_nam == 2026 else f"(Dữ liệu lịch sử viễn thám {cur_nam})"
         st.markdown(
-            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px;">'
+            f'<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-top:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; font-size:11.5px;">'
             f'  <div>📌 Đang khảo sát: <b style="color:#0F766E; font-size:12.5px;">Tháng {cur_thang}/{cur_nam}</b> {tag_nam} · <b style="color:#0F172A;">{vu_str}</b></div>'
-            f'  <div style="color:#64748B;">Huyện Yên Thành (Nghệ An) · NASA Earthdata & Thủy nông Ba Ra Đô Lương</div>'
+            f'  <div style="color:#64748B;">Vựa lúa Yên Thành · Kho lưu trữ NASA MODIS, SMAP, GPM 9 năm (2018–2026)</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
