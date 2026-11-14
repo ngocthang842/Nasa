@@ -34,64 +34,85 @@ def hien(ctx):
     nam, thang, years = ctx["nam"], ctx.get("thang", 4), ctx["years"]
     vung = "Yên Thành"
 
-    # 1. HEADER CHUẨN
+    # 1. BỘ QUẢN LÝ NIÊN VỤ KẾ HOẠCH NÔNG NGHIỆP THUẦN LÚA
     key_nam = "filter_nam_thuan_lua"
-    key_thang = "filter_thang_thuan_lua"
-
     if key_nam not in st.session_state:
-        st.session_state[key_nam] = nam
-    if key_thang not in st.session_state:
-        st.session_state[key_thang] = thang
+        st.session_state[key_nam] = nam if nam in years else years[-1]
 
+    # Danh sách năm sắp xếp giảm dần (Năm mới nhất lên đầu để chọn nhanh nhất)
+    danh_sach_nam = sorted(years, reverse=True)
     nam_cur = int(st.session_state[key_nam])
-    thang_cur = int(st.session_state[key_thang])
 
-    tieu_de(vung, thang_cur, nam_cur, "KẾ HOẠCH MÙA VỤ & CƠ CẤU 2 VỤ THUẦN LÚA YÊN THÀNH", len(years) < 2)
+    # TIÊU ĐỀ CHUẨN NIÊN VỤ CẢ NĂM (Không để tháng để tránh mâu thuẫn với cơ cấu 2 vụ cả năm)
+    tieu_de(vung, None, nam_cur, "KẾ HOẠCH MÙA VỤ & CƠ CẤU 2 VỤ THUẦN LÚA YÊN THÀNH", len(years) < 2)
 
-    # 1.5 BỘ ĐIỀU KHIỂN THỜI GIAN KHẢO SÁT (NĂM 2018–2026 & THÁNG T1–T12)
+    # 1.5 BỘ ĐIỀU KHIỂN NIÊN VỤ THÔNG MINH (SEARCHABLE SELECTBOX + ĐIỀU HƯỚNG NHANH CÁC NĂM XA)
     with st.container(border=True):
-        col_y_lbl, col_y_val = st.columns([3.2, 8.8], gap="small")
-        with col_y_lbl:
-            st.markdown(
-                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
-                '📅 1. Chuỗi Năm Khảo Sát (2018–2026):'
-                '</div>',
-                unsafe_allow_html=True,
-            )
-        with col_y_val:
-            nam_chon = st.pills(
-                "Năm khảo sát lúa thuần:",
-                options=years,
-                default=st.session_state[key_nam],
-                format_func=lambda y: f"🌟 Năm {y} (Kế hoạch)" if y == 2026 else (f"📅 {y}" if y >= 2024 else f"📜 {y}"),
-                label_visibility="collapsed",
-                key="ctrl_nam_thuan_lua",
-            )
-            if nam_chon:
-                st.session_state[key_nam] = int(nam_chon)
+        col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([4.4, 5.0, 2.6], gap="small")
 
-        col_m_lbl, col_m_val = st.columns([3.2, 8.8], gap="small")
-        with col_m_lbl:
+        with col_ctrl1:
+            idx_nam = danh_sach_nam.index(nam_cur) if nam_cur in danh_sach_nam else 0
+
+            def _dinh_dang_nam(y):
+                if y == 2026:
+                    return f"🌟 Năm {y} (Niên vụ kế hoạch trọng tâm)"
+                elif y >= 2024:
+                    return f"📅 Năm {y} (Viễn thám gần đây)"
+                else:
+                    return f"📜 Năm {y} (Dữ liệu lịch sử đối chiếu)"
+
+            sel_nam = st.selectbox(
+                "Chọn hoặc gõ tìm kiếm Năm Niên Vụ:",
+                options=danh_sach_nam,
+                index=idx_nam,
+                format_func=_dinh_dang_nam,
+                key="select_nam_luan_canh",
+                help="Gõ số năm trực tiếp để tìm kiếm nhanh dù chuỗi dữ liệu có 30-50 năm",
+            )
+            if sel_nam and sel_nam != nam_cur:
+                st.session_state[key_nam] = int(sel_nam)
+                st.rerun()
+
+        with col_ctrl2:
+            st.markdown("<div style='font-size:11px; font-weight:700; color:#64748B; margin-bottom:5px;'>ĐIỀU HƯỚNG NHANH CÁC NĂM:</div>", unsafe_allow_html=True)
+            c_prev, c_curr, c_next = st.columns(3, gap="small")
+
+            # Lùi 1 năm (năm cũ hơn)
+            with c_prev:
+                nam_truoc = nam_cur - 1
+                co_nam_truoc = nam_truoc in years
+                if st.button(f"◀️ {nam_truoc if co_nam_truoc else 'Cũ hơn'}", key="btn_luan_canh_nam_truoc", disabled=not co_nam_truoc, use_container_width=True, help="Lùi về năm trước đó"):
+                    st.session_state[key_nam] = nam_truoc
+                    st.rerun()
+
+            # Nhảy về năm kế hoạch 2026
+            with c_curr:
+                is_2026 = (nam_cur == 2026)
+                if st.button("🌟 2026 Hiện tại", key="btn_luan_canh_2026", disabled=is_2026, use_container_width=True, help="Nhảy ngay về Năm Kế hoạch trọng tâm 2026"):
+                    st.session_state[key_nam] = 2026
+                    st.rerun()
+
+            # Tiến 1 năm (năm mới hơn)
+            with c_next:
+                nam_sau = nam_cur + 1
+                co_nam_sau = nam_sau in years
+                if st.button(f"{nam_sau if co_nam_sau else 'Mới hơn'} ▶️", key="btn_luan_canh_nam_sau", disabled=not co_nam_sau, use_container_width=True, help="Tiến đến năm tiếp theo"):
+                    st.session_state[key_nam] = nam_sau
+                    st.rerun()
+
+        with col_ctrl3:
+            st.markdown("<div style='font-size:11px; font-weight:700; color:#64748B; margin-bottom:5px;'>KHO DỮ LIỆU:</div>", unsafe_allow_html=True)
             st.markdown(
-                '<div style="font-size:12px; font-weight:750; color:#0F172A; margin-top:6px;">'
-                '🌿 2. Tháng Trọng Tâm Khảo Sát:'
-                '</div>',
+                f"""
+                <div style="background:#F1F5F9; border:1px solid #E2E8F0; border-radius:8px; padding:6px 10px; text-align:center;">
+                  <span style="font-size:11px; font-weight:750; color:#0F172A;">🛰️ {len(years)} Năm Vệ Tinh</span>
+                  <div style="font-size:10px; color:#64748B;">{min(years)} → {max(years)}</div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-        with col_m_val:
-            thang_chon = st.pills(
-                "Tháng khảo sát vụ lúa:",
-                options=list(range(1, 13)),
-                default=st.session_state[key_thang],
-                format_func=lambda m: f"T{m} {ICON_THANG.get(m, '')}",
-                label_visibility="collapsed",
-                key="ctrl_thang_thuan_lua",
-            )
-            if thang_chon:
-                st.session_state[key_thang] = int(thang_chon)
 
     nam = int(st.session_state[key_nam])
-    thang = int(st.session_state[key_thang])
 
     # ĐỊNH HÌNH 3 ĐỢT CHUẨN 2 VỤ LÚA THUẦN + PHƠI ẢI VỤ ĐÔNG
     cac_dot = [
