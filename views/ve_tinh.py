@@ -105,15 +105,15 @@ DIEM_THUY_LOI = [
 ]
 
 NEN_BAN_DO = {
-    "🛰️ Vệ tinh Google Hybrid": (
+    "🛰️ Ảnh Vệ Tinh Landsat / USGS (Esri HD 30m)": (
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "Ảnh vệ tinh quang học bề mặt NASA Landsat / USGS & Esri World Imagery HD (30m)",
+    ),
+    "🛰️ Vệ tinh Google Satellite Hybrid": (
         "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
         "Google Satellite Hybrid (Đường thôn xóm & Ruộng lúa)",
     ),
-    "🌍 Vệ tinh Esri World": (
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        "Esri World Imagery HD",
-    ),
-    "🗺️ Bản đồ số (OSM)": ("OpenStreetMap", "OpenStreetMap"),
+    "🗺️ Bản đồ số Địa hình (OpenStreetMap)": ("OpenStreetMap", "OpenStreetMap"),
 }
 
 

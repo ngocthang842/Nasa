@@ -712,7 +712,7 @@ def hien_ndvi(ctx):
     nam, thang = _thanh_dieu_khien_thoi_gian(ctx, cot_id="ndvi")
 
     # 2. TIÊU ĐỀ
-    tieu_de(vung, thang, nam, "Phân tích Thảm Thực vật & Sức khỏe Lúa (NDVI MODIS)", False)
+    tieu_de(vung, thang, nam, "Phân tích Thảm Thực vật & Sức khỏe Lúa (NDVI Landsat & MODIS)", False)
 
     dl_yt = dl[dl.huyen == vung]
     r_thang = dl_yt[(dl_yt.year == nam) & (dl_yt.month == thang)]
@@ -740,7 +740,7 @@ def hien_ndvi(ctx):
     with c1, st.container(border=True):
         st.markdown(
             f"""
-            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">CHỈ SỐ NDVI MODIS</div>
+            <div style="font-size:11.5px; font-weight:750; color:#64748B; text-transform:uppercase;">CHỈ SỐ NDVI (LANDSAT & MODIS)</div>
             <div style="font-size:34px; font-weight:800; color:#16A34A; line-height:1.1; margin:2px 0;">{cur_ndvi:.2f}</div>
             <div style="font-size:12px; color:#475569;"><b>Tháng {thang}/{nam}</b> · Vựa lúa Yên Thành</div>
             <div style="font-size:11px; color:#15803D; font-weight:700; margin-top:4px;">
@@ -785,7 +785,7 @@ def hien_ndvi(ctx):
             f"""
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <div style="font-size:13.5px; font-weight:800; color:#0F172A;">
-                📈 Chuỗi Thời Gian 12 Tháng Chỉ Số NDVI MODIS — Năm {nam}
+                📈 Chuỗi Thời Gian 12 Tháng Chỉ Số NDVI (Landsat 30m & MODIS) — Năm {nam}
               </div>
               <div style="font-size:11px; color:#64748B;">Đường cong sinh học sinh khối tán lá lúa nước Yên Thành</div>
             </div>
@@ -831,7 +831,7 @@ def hien_ndvi(ctx):
         ctx,
         cot_id="ndvi",
         ten_lop="🌿 Sức khỏe Lúa (NDVI)",
-        ten_chi_so="NDVI MODIS",
+        ten_chi_so="NDVI Landsat & MODIS",
         icon_lop="🌿",
         nam=nam,
         thang=thang,
@@ -1218,7 +1218,7 @@ def hien_cong_thuc_thuat_toan(ctx):
                         $$NDVI = \\frac{NIR - RED}{NIR + RED}$$
                       </div>
                       <div style="font-size:11.5px; color:#475569;">
-                        <b>Đặc tả:</b> Cảm biến MODIS (Kênh NIR 841–876nm, RED 620–670nm). Đo khả năng hấp thụ quang hợp của diệp lục và tán lá lúa nước Yên Thành.
+                        <b>Đặc tả:</b> Cảm biến OLI Landsat 8/9 (độ phân giải cao 30m) kết hợp MODIS/VIIRS (Kênh NIR 841–876nm, RED 620–670nm). Đo khả năng hấp thụ quang hợp của diệp lục và sinh khối tán lá lúa nước Yên Thành.
                       </div>
                     </div>
 
