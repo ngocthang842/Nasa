@@ -5,6 +5,7 @@ Cung cấp công cụ Research chuyên sâu chuỗi dữ liệu 9 năm (2018–2
 3. Tra cứu theo Tháng & Đối Chiếu Chuỗi 9 Năm (Monthly Satellite Matrix)
 Dữ liệu tích hợp: NASA POWER Daily, MODIS NDVI/EVI/LAI/LST, SMAP L-band, GPM IMERG.
 """
+import calendar
 import datetime
 import numpy as np
 import pandas as pd
@@ -38,6 +39,18 @@ def tai_du_lieu_ngay():
         return pd.DataFrame()
 
 
+def _tinh_ngay_hop_le(y, m, d_target, min_d, max_d):
+    """Tính toán ngày hợp lệ theo năm, tháng và ngày mục tiêu, tránh lỗi tháng thiếu ngày hoặc vượt min/max."""
+    max_d_in_m = calendar.monthrange(int(y), int(m))[1]
+    d = min(int(d_target), max_d_in_m)
+    res = datetime.date(int(y), int(m), d)
+    if res < min_d:
+        res = min_d
+    elif res > max_d:
+        res = max_d
+    return res
+
+
 def hien(ctx):
     """View chính: Tra Cứu & Research Viễn Thám Theo Thời Gian (Ngày / Tháng / Năm)."""
     dl = ctx["dl"]
@@ -46,10 +59,19 @@ def hien(ctx):
     thang = ctx.get("thang", 4)
     years = ctx.get("years", list(range(2018, 2027)))
 
+    # Xác định Ngày / Tháng / Năm đang được khảo sát trong phiên làm việc
+    cur_d = st.session_state.get("chuyen_ngay_den") or st.session_state.get("picker_date_single")
+    if isinstance(cur_d, datetime.date):
+        nam_view = cur_d.year
+        thang_view = cur_d.month
+    else:
+        nam_view = nam
+        thang_view = thang
+
     tieu_de(
         vung,
-        thang,
-        nam,
+        thang_view,
+        nam_view,
         "TRA CỨU & KHẢO SÁT VIỄN THÁM THEO THỜI GIAN (NGÀY - THÁNG - NĂM)",
         False,
     )
@@ -85,25 +107,75 @@ def hien(ctx):
 
 def _hien_tab_ngay(df_daily, min_date, max_date, dl, vung):
     """Tra cứu chi tiết từng ngày trong chuỗi 3.240 ngày lịch sử NASA."""
+    # 0. Xử lý an toàn chuyển ngày (Safe Deferred State Transition tránh StreamlitWidgetAlreadyInstantiatedError)
+    if "chuyen_ngay_den" in st.session_state and st.session_state["chuyen_ngay_den"]:
+        st.session_state["picker_date_single"] = st.session_state.pop("chuyen_ngay_den")
+
+    ngay_mac_dinh = datetime.date(2026, 4, 15)
+    if ngay_mac_dinh > max_date:
+        ngay_mac_dinh = max_date
+
+    if "picker_date_single" not in st.session_state or not isinstance(st.session_state["picker_date_single"], datetime.date):
+        st.session_state["picker_date_single"] = ngay_mac_dinh
+
+    cur_d = st.session_state["picker_date_single"]
+
     with st.container(border=True):
         st.markdown(
             '<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
-            '🔍 Chọn Ngày Cần Tra Cứu Viễn Thám & Khí Tượng Yên Thành (2018–2026):'
+            '🔍 Bộ Điều Khiển Thời Gian Tra Cứu Viễn Thám & Khí Tượng Yên Thành (2018–2026):'
             '</div>'
             '<div style="font-size:11.5px; color:#64748B; margin-bottom:10px;">'
-            f'Kho dữ liệu tích hợp liên tục 3.237 ngày từ {min_date.strftime("%d/%m/%Y")} đến {max_date.strftime("%d/%m/%Y")}.'
+            f'Kho dữ liệu tích hợp liên tục 3.237 ngày từ {min_date.strftime("%d/%m/%Y")} đến {max_date.strftime("%d/%m/%Y")}. '
+            'Bấm chọn Năm hoặc Tháng bên dưới để chuyển thời gian khảo sát ngay lập tức, hoặc chọn Ngày cụ thể.'
             '</div>',
             unsafe_allow_html=True,
         )
 
-        col_d1, col_d2, col_d3 = st.columns([4, 4, 4], gap="small")
+        # 1. BỘ CHỌN NHANH NĂM & THÁNG TRỰC QUAN (1 CLICK LÀ CHUYỂN NGAY SANG THÁNG KHÁC)
+        col_y_sel, col_m_sel = st.columns([3.2, 8.8], gap="small")
+        with col_y_sel:
+            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">📅 CHỌN NĂM KHẢO SÁT:</div>', unsafe_allow_html=True)
+            danh_sach_nam = sorted(df_daily["year"].unique(), reverse=True)
+            idx_y = danh_sach_nam.index(cur_d.year) if cur_d.year in danh_sach_nam else 0
+            sel_y = st.selectbox(
+                "Năm tra cứu:",
+                options=danh_sach_nam,
+                index=idx_y,
+                key="sel_y_quick_tab_ngay",
+                label_visibility="collapsed",
+                help="Chọn năm trong chuỗi dữ liệu 9 năm NASA (2018–2026)",
+            )
+            if sel_y and sel_y != cur_d.year:
+                ngay_moi = _tinh_ngay_hop_le(sel_y, cur_d.month, cur_d.day, min_date, max_date)
+                st.session_state["chuyen_ngay_den"] = ngay_moi
+                st.rerun()
+
+        with col_m_sel:
+            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">🌿 CHỌN THÁNG (BẤM ĐỂ ĐỔI THÁNG NGAY):</div>', unsafe_allow_html=True)
+            sel_m = st.pills(
+                "Tháng tra cứu:",
+                options=list(range(1, 13)),
+                default=cur_d.month,
+                format_func=lambda m: f"T{m} {ICON_THANG.get(m, '')}",
+                key="pills_m_quick_tab_ngay",
+                label_visibility="collapsed",
+                help="Bấm vào tháng bất kỳ để chuyển ngày khảo sát ngay lập tức",
+            )
+            if sel_m and sel_m != cur_d.month:
+                ngay_moi = _tinh_ngay_hop_le(cur_d.year, sel_m, cur_d.day, min_date, max_date)
+                st.session_state["chuyen_ngay_den"] = ngay_moi
+                st.rerun()
+
+        st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
+
+        # 2. Ô CHỌN NGÀY CỤ THỂ VÀ GỢI Ý LỊCH SỬ NHANH
+        col_d1, col_d2, col_d3 = st.columns([3.8, 4.4, 3.8], gap="small")
         with col_d1:
-            ngay_mac_dinh = datetime.date(2026, 4, 15)
-            if ngay_mac_dinh > max_date:
-                ngay_mac_dinh = max_date
+            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">📆 HOẶC CHỌN NGÀY CỤ THỂ:</div>', unsafe_allow_html=True)
             ngay_chon = st.date_input(
                 "Chọn ngày:",
-                value=ngay_mac_dinh,
+                value=cur_d,
                 min_value=min_date,
                 max_value=max_date,
                 key="picker_date_single",
@@ -113,25 +185,23 @@ def _hien_tab_ngay(df_daily, min_date, max_date, dl, vung):
 
         with col_d2:
             st.markdown(
-                '<div style="font-size:11.5px; color:#334155; padding-top:6px;">'
-                '💡 <i>Gợi ý tra cứu nhanh:</i>'
-                '</div>',
+                '<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">💡 ĐỢT THỜI TIẾT CỰC ĐOAN:</div>',
                 unsafe_allow_html=True,
             )
-            col_b1, col_b2 = st.columns(2)
+            col_b1, col_b2 = st.columns(2, gap="small")
             with col_b1:
-                if st.button("🔥 Đỉnh hạn 2019 (22/06)", use_container_width=True):
-                    st.session_state["picker_date_single"] = datetime.date(2019, 6, 22)
+                if st.button("🔥 Hạn 2019 (22/06)", key="btn_quick_han_2019", use_container_width=True, help="Khảo sát đợt hạn đỉnh điểm 22/06/2019"):
+                    st.session_state["chuyen_ngay_den"] = datetime.date(2019, 6, 22)
                     st.rerun()
             with col_b2:
-                if st.button("🌊 Đỉnh lũ 2020 (19/10)", use_container_width=True):
-                    st.session_state["picker_date_single"] = datetime.date(2020, 10, 19)
+                if st.button("🌊 Lũ 2020 (19/10)", key="btn_quick_lu_2020", use_container_width=True, help="Khảo sát đỉnh lũ lụt lịch sử 19/10/2020"):
+                    st.session_state["chuyen_ngay_den"] = datetime.date(2020, 10, 19)
                     st.rerun()
 
         with col_d3:
-            st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-            if st.button("🌸 Ngày trổ lúa xuân 2026 (15/04)", use_container_width=True):
-                st.session_state["picker_date_single"] = datetime.date(2026, 4, 15)
+            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">🌾 SỰ KIỆN NÔNG HỌC 2026:</div>', unsafe_allow_html=True)
+            if st.button("🌸 Trổ lúa xuân (15/04/2026)", key="btn_quick_xuan_2026", use_container_width=True, help="Khảo sát giai đoạn trổ bông xuân 15/04/2026"):
+                st.session_state["chuyen_ngay_den"] = datetime.date(2026, 4, 15)
                 st.rerun()
 
     # Trích xuất dữ liệu ngày được chọn
@@ -355,6 +425,13 @@ def _hien_tab_ngay(df_daily, min_date, max_date, dl, vung):
 
 def _hien_tab_khoang_ngay(df_daily, min_date, max_date):
     """Phân tích thống kê và diễn biến trong một khoảng thời gian bất kỳ (ví dụ: đợt hạn, mùa lũ)."""
+    # 0. Xử lý an toàn chuyển khoảng ngày (Safe Deferred State Transition tránh StreamlitWidgetAlreadyInstantiatedError)
+    if "chuyen_khoang_den" in st.session_state and st.session_state["chuyen_khoang_den"]:
+        st.session_state["picker_date_range"] = st.session_state.pop("chuyen_khoang_den")
+
+    d_from_def = datetime.date(2025, 6, 1)
+    d_to_def = datetime.date(2025, 7, 31)
+
     with st.container(border=True):
         st.markdown(
             '<div style="font-size:13.5px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
@@ -366,11 +443,9 @@ def _hien_tab_khoang_ngay(df_daily, min_date, max_date):
             unsafe_allow_html=True,
         )
 
-        d_from_def = datetime.date(2025, 6, 1)
-        d_to_def = datetime.date(2025, 7, 31)
-
         c_r1, c_r2 = st.columns([6, 6], gap="small")
         with c_r1:
+            st.markdown('<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">📅 KHOẢNG NGÀY BẮT ĐẦU → KẾT THÚC:</div>', unsafe_allow_html=True)
             range_val = st.date_input(
                 "Khoảng ngày khảo sát:",
                 value=(d_from_def, d_to_def),
@@ -382,18 +457,22 @@ def _hien_tab_khoang_ngay(df_daily, min_date, max_date):
             )
 
         with c_r2:
-            col_k1, col_k2, col_k3 = st.columns(3)
+            st.markdown(
+                '<div style="font-size:11px; font-weight:750; color:#475569; margin-bottom:3px;">💡 KHOẢNG THỜI GIAN TRỌNG ĐIỂM THEO MÙA VỤ:</div>',
+                unsafe_allow_html=True,
+            )
+            col_k1, col_k2, col_k3 = st.columns(3, gap="small")
             with col_k1:
-                if st.button("🌾 Vụ Xuân 2026", use_container_width=True):
-                    st.session_state["picker_date_range"] = (datetime.date(2026, 1, 1), datetime.date(2026, 5, 31))
+                if st.button("🌾 Vụ Xuân 2026", key="btn_rng_xuan_2026", use_container_width=True):
+                    st.session_state["chuyen_khoang_den"] = (datetime.date(2026, 1, 1), datetime.date(2026, 5, 31))
                     st.rerun()
             with col_k2:
-                if st.button("☀️ Vụ Hè Thu 2025", use_container_width=True):
-                    st.session_state["picker_date_range"] = (datetime.date(2025, 6, 1), datetime.date(2025, 9, 20))
+                if st.button("☀️ Hè Thu 2025", key="btn_rng_hethu_2025", use_container_width=True):
+                    st.session_state["chuyen_khoang_den"] = (datetime.date(2025, 6, 1), datetime.date(2025, 9, 20))
                     st.rerun()
             with col_k3:
-                if st.button("🌊 Mùa Lũ 2020", use_container_width=True):
-                    st.session_state["picker_date_range"] = (datetime.date(2020, 9, 15), datetime.date(2020, 11, 15))
+                if st.button("🌊 Mùa Lũ 2020", key="btn_rng_lu_2020", use_container_width=True):
+                    st.session_state["chuyen_khoang_den"] = (datetime.date(2020, 9, 15), datetime.date(2020, 11, 15))
                     st.rerun()
 
     if isinstance(range_val, (list, tuple)) and len(range_val) == 2:
@@ -584,3 +663,95 @@ def _hien_tab_thang_nam(dl, vung, years):
             rows_m.append(r_data)
 
         st.dataframe(pd.DataFrame(rows_m), use_container_width=True, hide_index=True)
+
+        # PHÂN TÍCH CHI TIẾT 1 THÁNG CỤ THỂ TRONG CHUỖI 9 NĂM
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(
+                '<div style="font-size:13px; font-weight:800; color:#0F172A; margin-bottom:4px;">'
+                '🔬 Khảo Sát Chi Tiết Toàn Diện Một Tháng Cụ Thể Trong Chuỗi Lịch Sử:'
+                '</div>'
+                '<div style="font-size:11.5px; color:#64748B; margin-bottom:8px;">'
+                'Chọn Năm và Tháng để xem ngay bộ 6 chỉ số viễn thám vệ tinh đồng bộ của tháng đó.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+            col_t_y, col_t_m = st.columns([3.5, 8.5], gap="small")
+            with col_t_y:
+                nam_mat = st.selectbox("Năm khảo sát:", sorted(years, reverse=True), index=0, key="sel_y_matrix_detail", label_visibility="collapsed")
+            with col_t_m:
+                thang_mat = st.pills(
+                    "Tháng khảo sát:",
+                    options=list(range(1, 13)),
+                    default=4,
+                    format_func=lambda m: f"T{m} {ICON_THANG.get(m, '')}",
+                    key="pills_m_matrix_detail",
+                    label_visibility="collapsed",
+                )
+
+            thang_mat = thang_mat or 4
+            sub_mat = df_yt[(df_yt.year == nam_mat) & (df_yt.month == thang_mat)]
+            r_mat = sub_mat.iloc[0] if not sub_mat.empty else pd.Series()
+
+            tmax_val = float(r_mat.get("tmax", 30.0)) if pd.notna(r_mat.get("tmax")) else 30.0
+            nong_val = int(r_mat.get("nong35", 0)) if pd.notna(r_mat.get("nong35")) else 0
+            mua_val = float(r_mat.get("mua_mm", 0.0)) if pd.notna(r_mat.get("mua_mm")) else 0.0
+            sm_val = float(r_mat.get("sm_rootzone", 0.3)) if pd.notna(r_mat.get("sm_rootzone")) else 0.3
+            ndvi_val = float(r_mat.get("ndvi", 0.65)) if pd.notna(r_mat.get("ndvi")) else 0.65
+            lst_val = float(r_mat.get("lst_c", 30.0)) if pd.notna(r_mat.get("lst_c")) else 30.0
+
+            c_m1, c_m2, c_m3, c_m4, c_m5, c_m6 = st.columns(6, gap="small")
+            with c_m1:
+                st.markdown(
+                    f"""<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px; text-align:center;">
+                      <div style="font-size:10.5px; font-weight:700; color:#64748B;">Nhiệt độ Tmax</div>
+                      <div style="font-size:18px; font-weight:800; color:#F97316; margin:2px 0;">{tmax_val:.1f}°C</div>
+                      <div style="font-size:10px; color:#94A3B8;">NASA POWER</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+            with c_m2:
+                st.markdown(
+                    f"""<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px; text-align:center;">
+                      <div style="font-size:10.5px; font-weight:700; color:#64748B;">Gió Lào ≥35°C</div>
+                      <div style="font-size:18px; font-weight:800; color:#DC2626; margin:2px 0;">{nong_val} ngày</div>
+                      <div style="font-size:10px; color:#94A3B8;">Nắng nóng cực đoan</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+            with c_m3:
+                st.markdown(
+                    f"""<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px; text-align:center;">
+                      <div style="font-size:10.5px; font-weight:700; color:#64748B;">Mưa tích lũy</div>
+                      <div style="font-size:18px; font-weight:800; color:#0284C7; margin:2px 0;">{mua_val:.0f} mm</div>
+                      <div style="font-size:10px; color:#94A3B8;">GPM IMERG</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+            with c_m4:
+                st.markdown(
+                    f"""<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px; text-align:center;">
+                      <div style="font-size:10.5px; font-weight:700; color:#64748B;">Độ ẩm tầng rễ</div>
+                      <div style="font-size:18px; font-weight:800; color:#10B981; margin:2px 0;">{sm_val*100:.1f}%</div>
+                      <div style="font-size:10px; color:#94A3B8;">SMAP L-band</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+            with c_m5:
+                st.markdown(
+                    f"""<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px; text-align:center;">
+                      <div style="font-size:10.5px; font-weight:700; color:#64748B;">Sinh khối NDVI</div>
+                      <div style="font-size:18px; font-weight:800; color:#15803D; margin:2px 0;">{ndvi_val:.2f}</div>
+                      <div style="font-size:10px; color:#94A3B8;">MODIS Terra</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+            with c_m6:
+                st.markdown(
+                    f"""<div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:8px; padding:8px; text-align:center;">
+                      <div style="font-size:10.5px; font-weight:700; color:#64748B;">Nhiệt bề mặt (LST)</div>
+                      <div style="font-size:18px; font-weight:800; color:#B45309; margin:2px 0;">{lst_val:.1f}°C</div>
+                      <div style="font-size:10px; color:#94A3B8;">MODIS Aqua</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
